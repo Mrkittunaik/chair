@@ -704,6 +704,8 @@ const AdminStore = {
   pinKey: "prabot_admin_pin",
   sessKey: "prabot_admin_session",
   homeKey: "prabot_admin_home",   // { hero:{...}, about:{...}, promo:{...}, collections:[...] } -- overrides merged onto defaults
+  orderKey: "prabot_orders",      // [ orderObject, ... ] -- customer orders placed via checkout
+  settingsKey: "prabot_admin_settings", // { siteName, phone, email, address, freeShipThreshold, shipCost, currency }
 
   read(k, fallback){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?fallback:v; }catch(e){ return fallback; } },
   write(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
@@ -711,6 +713,39 @@ const AdminStore = {
   getOverrides(){ return this.read(this.prodKey, {}); },
   getDeleted(){ return this.read(this.delKey, []); },
   getCatOverrides(){ return this.read(this.catKey, {}); },
+
+  /* ---- Orders ---- */
+  getOrders(){ return this.read(this.orderKey, []); },
+  saveOrders(list){ this.write(this.orderKey, list); },
+  addOrder(order){ const list = this.getOrders(); list.unshift(order); this.saveOrders(list); return order; },
+  nextOrderId(){
+    const list = this.getOrders();
+    let n = list.length + 1;
+    const exists = id => list.some(o=>o.id===id);
+    while(exists("ORD"+String(n).padStart(4,"0"))) n++;
+    return "ORD"+String(n).padStart(4,"0");
+  },
+  updateOrderStatus(id, status){
+    const list = this.getOrders();
+    const o = list.find(o=>o.id===id);
+    if(o){ o.status = status; o.history = (o.history||[]).concat([{status, at: new Date().toISOString()}]); this.saveOrders(list); }
+  },
+  deleteOrder(id){ this.saveOrders(this.getOrders().filter(o=>o.id!==id)); },
+
+  /* ---- Site settings ---- */
+  defaultSettings(){
+    return {
+      siteName: "Prabot Furniture",
+      phone: "+91 90000 00000",
+      email: "hello@prabot.example",
+      address: "Hyderabad, Telangana",
+      freeShipThreshold: 25000,
+      shipCost: 1499,
+      currency: "INR"
+    };
+  },
+  getSettings(){ return Object.assign({}, this.defaultSettings(), this.read(this.settingsKey, {})); },
+  saveSettings(partial){ this.write(this.settingsKey, Object.assign({}, this.getSettings(), partial)); },
 
   /* ---- Homepage content ---- */
   getHome(){ return this.read(this.homeKey, {}); },
@@ -935,8 +970,8 @@ function renderFooter(){
         </div>
       </div>
       <div class="footer-base">
-        <span>© ${new Date().getFullYear()} Prabot Furniture, Hyderabad</span>
-        <span>Free delivery and installation on orders above ₹25,000 · <a href="#/admin" style="opacity:.45;font-size:11px;">Admin</a></span>
+        <span>© ${new Date().getFullYear()} ${escapeHtml(AdminStore.getSettings().siteName)}</span>
+        <span>Free delivery and installation on orders above ${formatINR(AdminStore.getSettings().freeShipThreshold)} · <a href="#/admin" style="opacity:.45;font-size:11px;">Admin</a></span>
       </div>
     </div>
   </footer>`;
@@ -1612,7 +1647,8 @@ function afterCart(){
       return;
     }
     const sub = Store.cartTotal();
-    const ship = sub >= 25000 ? 0 : 1499;
+    const settings = AdminStore.getSettings();
+    const ship = sub >= settings.freeShipThreshold ? 0 : settings.shipCost;
     area.innerHTML = `
       <div class="cart-layout">
         <div class="cart-list">
@@ -1640,18 +1676,119 @@ function afterCart(){
           <div class="sum-row"><span>Subtotal</span><span>${formatINR(sub)}</span></div>
           <div class="sum-row"><span>Delivery and install</span><span>${ship? formatINR(ship) : "Free"}</span></div>
           <div class="sum-total"><span>Total</span><span>${formatINR(sub+ship)}</span></div>
-          <button class="btn btn-primary btn-block" style="margin-top:18px;" id="checkout">Checkout</button>
+          <a href="#/checkout" class="btn btn-primary btn-block" style="margin-top:18px;" id="checkout">Checkout</a>
           <a href="#/shop" class="btn btn-ghost btn-block" style="margin-top:10px;">Keep shopping</a>
-          ${ship? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;">Add ${formatINR(25000-sub)} more for free delivery.</p>`:""}
+          ${ship? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;">Add ${formatINR(settings.freeShipThreshold-sub)} more for free delivery.</p>`:""}
         </aside>
       </div>`;
     area.querySelectorAll("[data-inc]").forEach(b=>b.addEventListener("click",()=>{ Store.setQty(b.dataset.inc, Store.getCart()[b.dataset.inc]+1); draw(); }));
     area.querySelectorAll("[data-dec]").forEach(b=>b.addEventListener("click",()=>{ Store.setQty(b.dataset.dec, Store.getCart()[b.dataset.dec]-1); draw(); }));
     area.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{ Store.removeFromCart(b.dataset.del); showToast("Removed"); draw(); }));
-    const co = document.getElementById("checkout");
-    if(co) co.addEventListener("click", ()=>showToast("Checkout is a demo in this build"));
   }
   draw();
+}
+
+/* ---------------- View: Checkout ---------------- */
+function viewCheckout(){
+  const cart = Store.getCart();
+  const ids = Object.keys(cart);
+  if(!ids.length){
+    return `<section class="section"><div class="container"><div class="empty-state">
+      <h3>Your cart is empty</h3><p>Add something before checking out.</p>
+      <a href="#/shop" class="btn btn-primary">Browse furniture</a></div></div></section>`;
+  }
+  const settings = AdminStore.getSettings();
+  const sub = Store.cartTotal();
+  const ship = sub >= settings.freeShipThreshold ? 0 : settings.shipCost;
+  const items = ids.map(id=>findProduct(id)).filter(Boolean);
+  return `
+  <section class="page-head">
+    <div class="container">
+      <p class="breadcrumb"><a href="#/">Home</a> / <a href="#/cart">Cart</a> / Checkout</p>
+      <h1 class="page-title">Checkout</h1>
+      <p class="page-desc">Enter your delivery details to place the order.</p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container cart-layout">
+      <div class="form-card">
+        <form id="checkoutForm">
+          <div class="field"><label for="coName">Full name</label><input id="coName" required></div>
+          <div class="field"><label for="coPhone">Phone</label><input id="coPhone" type="tel" required></div>
+          <div class="field"><label for="coEmail">Email</label><input id="coEmail" type="email" required></div>
+          <div class="field"><label for="coAddress">Delivery address</label><textarea id="coAddress" required></textarea></div>
+          <div class="field"><label for="coNotes">Order notes (optional)</label><textarea id="coNotes"></textarea></div>
+          <button class="btn btn-primary btn-block" type="submit">Place order — ${formatINR(sub+ship)}</button>
+        </form>
+      </div>
+      <aside class="summary">
+        <h3>Order summary</h3>
+        ${items.map(p=>`<div class="sum-row"><span>${escapeHtml(p.name)} × ${cart[p.id]}</span><span>${formatINR(p.price*cart[p.id])}</span></div>`).join("")}
+        <div class="sum-row"><span>Subtotal</span><span>${formatINR(sub)}</span></div>
+        <div class="sum-row"><span>Delivery and install</span><span>${ship? formatINR(ship) : "Free"}</span></div>
+        <div class="sum-total"><span>Total</span><span>${formatINR(sub+ship)}</span></div>
+      </aside>
+    </div>
+  </section>`;
+}
+function afterCheckout(){
+  const form = document.getElementById("checkoutForm");
+  if(!form) return;
+  form.addEventListener("submit", e=>{
+    e.preventDefault();
+    const cart = Store.getCart();
+    const ids = Object.keys(cart);
+    const items = ids.map(id=>{
+      const p = findProduct(id);
+      return p ? { id:p.id, name:p.name, price:p.price, qty:cart[id] } : null;
+    }).filter(Boolean);
+    const settings = AdminStore.getSettings();
+    const sub = Store.cartTotal();
+    const ship = sub >= settings.freeShipThreshold ? 0 : settings.shipCost;
+    const order = {
+      id: AdminStore.nextOrderId(),
+      createdAt: new Date().toISOString(),
+      status: "pending",
+      customer: {
+        name: document.getElementById("coName").value.trim(),
+        phone: document.getElementById("coPhone").value.trim(),
+        email: document.getElementById("coEmail").value.trim(),
+        address: document.getElementById("coAddress").value.trim(),
+        notes: document.getElementById("coNotes").value.trim()
+      },
+      items, subtotal: sub, shipping: ship, total: sub+ship,
+      history: [{status:"pending", at:new Date().toISOString()}]
+    };
+    AdminStore.addOrder(order);
+    Store.setCart({});
+    location.hash = "#/order-confirmed/" + order.id;
+  });
+}
+
+/* ---------------- View: Order confirmation ---------------- */
+function viewOrderConfirmed(id){
+  const order = AdminStore.getOrders().find(o=>o.id===id);
+  if(!order){
+    return `<section class="section"><div class="container"><div class="empty-state">
+      <h3>Order not found</h3><a href="#/shop" class="btn btn-primary">Browse furniture</a></div></div></section>`;
+  }
+  return `
+  <section class="page-head">
+    <div class="container">
+      <h1 class="page-title">Thank you, ${escapeHtml(order.customer.name)}!</h1>
+      <p class="page-desc">Your order <strong>${order.id}</strong> has been placed. We'll contact you at ${escapeHtml(order.customer.phone)} to confirm delivery.</p>
+    </div>
+  </section>
+  <section class="section"><div class="container" style="max-width:640px;">
+    <div class="form-card">
+      <h3 style="margin-bottom:12px;">Order summary</h3>
+      ${order.items.map(it=>`<div class="sum-row"><span>${escapeHtml(it.name)} × ${it.qty}</span><span>${formatINR(it.price*it.qty)}</span></div>`).join("")}
+      <div class="sum-row"><span>Delivery</span><span>${order.shipping? formatINR(order.shipping):"Free"}</span></div>
+      <div class="sum-total"><span>Total</span><span>${formatINR(order.total)}</span></div>
+      <p style="margin-top:14px;font-size:13px;color:var(--ink-soft);">Delivering to: ${escapeHtml(order.customer.address)}</p>
+    </div>
+    <a href="#/shop" class="btn btn-primary" style="margin-top:18px;">Continue shopping</a>
+  </div></section>`;
 }
 
 /* ---------------- View: Wishlist ---------------- */
@@ -1751,9 +1888,9 @@ function viewContact(){
         </form>
       </div>
       <div>
-        <div class="info-line"><strong>Workshop</strong><span>Plot 14, Jubilee Hills, Hyderabad 500033</span></div>
-        <div class="info-line"><strong>Phone</strong><span>+91 40 4000 1234</span></div>
-        <div class="info-line"><strong>Email</strong><span>hello@prabot.example</span></div>
+        <div class="info-line"><strong>Workshop</strong><span>${escapeHtml(AdminStore.getSettings().address)}</span></div>
+        <div class="info-line"><strong>Phone</strong><span>${escapeHtml(AdminStore.getSettings().phone)}</span></div>
+        <div class="info-line"><strong>Email</strong><span>${escapeHtml(AdminStore.getSettings().email)}</span></div>
         <div class="info-line"><strong>Hours</strong><span>Mon–Sat, 10am to 7pm</span></div>
         <div class="about-img" style="margin-top:22px;"><img src="${IMG.collectionLiving}" ${fb("sofas")} alt="Showroom floor" loading="lazy"></div>
       </div>
@@ -1829,9 +1966,11 @@ function afterAdminLogin(){
 function adminTabBar(active){
   const tabs = [
     {key:"dashboard", label:"Dashboard"},
+    {key:"orders", label:"Orders"},
     {key:"products", label:"Products"},
     {key:"categories", label:"Categories"},
-    {key:"homepage", label:"Homepage"}
+    {key:"homepage", label:"Homepage"},
+    {key:"settings", label:"Settings"}
   ];
   return `<div class="admin-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;">
     ${tabs.map(t=>`<a href="#/admin/panel?tab=${t.key}" class="btn btn-sm ${active===t.key?'btn-primary':'btn-ghost'}">${t.label}</a>`).join("")}
@@ -1863,11 +2002,17 @@ function viewAdminPanel(params){
   if(tab === "dashboard") return head + viewAdminDashboard(products, cats);
   if(tab === "homepage") return head + viewAdminHomepage();
   if(tab === "categories") return head + viewAdminCategories(cats, products);
+  if(tab === "orders") return head + viewAdminOrders(params);
+  if(tab === "settings") return head + viewAdminSettings();
   return head + viewAdminProducts(products, cats, editing, catOptions);
 }
 
 function viewAdminDashboard(products, cats){
   const featured = products.filter(p=>p.featured).length;
+  const orders = AdminStore.getOrders();
+  const revenue = orders.filter(o=>o.status!=="cancelled").reduce((s,o)=>s+o.total,0);
+  const pending = orders.filter(o=>o.status==="pending").length;
+  const recent = orders.slice(0,5);
   return `
   <section class="section">
     <div class="container">
@@ -1876,6 +2021,9 @@ function viewAdminDashboard(products, cats){
           ["Total products", products.length],
           ["Categories", Object.keys(cats).length],
           ["Featured products", featured],
+          ["Orders", orders.length],
+          ["Pending orders", pending],
+          ["Revenue", formatINR(revenue)],
         ].map(([label,val])=>`
           <div class="form-card" style="padding:18px;">
             <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;">${label}</div>
@@ -1883,10 +2031,137 @@ function viewAdminDashboard(products, cats){
           </div>`).join("")}
       </div>
       <h2 style="font-size:18px;margin-bottom:12px;">Quick actions</h2>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;">
         <a href="#/admin/panel?tab=products" class="btn btn-primary btn-sm">Add product</a>
         <a href="#/admin/panel?tab=categories" class="btn btn-secondary btn-sm">Add category</a>
         <a href="#/admin/panel?tab=homepage" class="btn btn-secondary btn-sm">Edit homepage</a>
+        <a href="#/admin/panel?tab=settings" class="btn btn-secondary btn-sm">Site settings</a>
+      </div>
+      <h2 style="font-size:18px;margin-bottom:12px;">Recent orders</h2>
+      ${recent.length ? `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${recent.map(o=>`
+              <tr>
+                <td>${o.id}</td>
+                <td>${escapeHtml(o.customer.name)}</td>
+                <td>${formatINR(o.total)}</td>
+                <td>${orderStatusBadge(o.status)}</td>
+                <td><a href="#/admin/panel?tab=orders&view=${o.id}" class="btn btn-sm btn-ghost">View</a></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>` : `<p style="color:var(--ink-soft);font-size:13.5px;">No orders placed yet.</p>`}
+    </div>
+  </section>`;
+}
+
+function orderStatusBadge(status){
+  const colors = { pending:"#B7791F", confirmed:"#2563EB", shipped:"#7C3AED", delivered:"#15803D", cancelled:"#B3261E" };
+  const c = colors[status] || "#666";
+  return `<span style="display:inline-block;padding:3px 9px;border-radius:100px;font-size:11.5px;font-weight:700;text-transform:capitalize;color:#fff;background:${c};">${status}</span>`;
+}
+
+/* ---------------- Admin: orders ---------------- */
+function viewAdminOrders(params){
+  const orders = AdminStore.getOrders();
+  const viewId = params.view || "";
+  const viewing = viewId ? orders.find(o=>o.id===viewId) : null;
+
+  if(viewing){
+    return `
+    <section class="section"><div class="container" style="max-width:720px;">
+      <a href="#/admin/panel?tab=orders" class="btn btn-sm btn-ghost" style="margin-bottom:16px;">← All orders</a>
+      <div class="form-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div>
+            <h2 style="font-size:20px;">${viewing.id}</h2>
+            <p style="color:var(--ink-soft);font-size:13px;">${new Date(viewing.createdAt).toLocaleString("en-IN")}</p>
+          </div>
+          ${orderStatusBadge(viewing.status)}
+        </div>
+        <h3 style="font-size:14px;margin-bottom:8px;">Customer</h3>
+        <p style="font-size:13.5px;line-height:1.7;margin-bottom:16px;">
+          ${escapeHtml(viewing.customer.name)}<br>
+          ${escapeHtml(viewing.customer.phone)} · ${escapeHtml(viewing.customer.email)}<br>
+          ${escapeHtml(viewing.customer.address)}
+          ${viewing.customer.notes ? `<br><em>Note: ${escapeHtml(viewing.customer.notes)}</em>` : ""}
+        </p>
+        <h3 style="font-size:14px;margin-bottom:8px;">Items</h3>
+        <div class="admin-table-wrap" style="margin-bottom:16px;">
+          <table class="admin-table">
+            <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+            <tbody>
+              ${viewing.items.map(it=>`<tr><td>${escapeHtml(it.name)}</td><td>${it.qty}</td><td>${formatINR(it.price)}</td><td>${formatINR(it.price*it.qty)}</td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div class="sum-row"><span>Subtotal</span><span>${formatINR(viewing.subtotal)}</span></div>
+        <div class="sum-row"><span>Delivery</span><span>${viewing.shipping? formatINR(viewing.shipping):"Free"}</span></div>
+        <div class="sum-total" style="margin-bottom:18px;"><span>Total</span><span>${formatINR(viewing.total)}</span></div>
+        <div class="field"><label for="orderStatusSelect">Update status</label>
+          <select id="orderStatusSelect" data-order-id="${viewing.id}">
+            ${["pending","confirmed","shipped","delivered","cancelled"].map(s=>`<option value="${s}" ${viewing.status===s?"selected":""}>${s[0].toUpperCase()+s.slice(1)}</option>`).join("")}
+          </select>
+        </div>
+        <button class="btn btn-sm btn-ghost" data-del-order="${viewing.id}">Delete order</button>
+      </div>
+    </div></section>`;
+  }
+
+  return `
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size:20px;margin-bottom:14px;">Orders (${orders.length})</h2>
+      ${orders.length ? `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${orders.map(o=>`
+              <tr>
+                <td>${o.id}</td>
+                <td>${new Date(o.createdAt).toLocaleDateString("en-IN")}</td>
+                <td>${escapeHtml(o.customer.name)}</td>
+                <td>${o.items.reduce((s,it)=>s+it.qty,0)}</td>
+                <td>${formatINR(o.total)}</td>
+                <td>${orderStatusBadge(o.status)}</td>
+                <td><a href="#/admin/panel?tab=orders&view=${o.id}" class="btn btn-sm btn-ghost">View</a></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>` : `<div class="empty-state"><h3>No orders yet</h3><p>Orders placed at checkout will show up here.</p></div>`}
+    </div>
+  </section>`;
+}
+
+/* ---------------- Admin: settings ---------------- */
+function viewAdminSettings(){
+  const s = AdminStore.getSettings();
+  return `
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size:20px;margin-bottom:14px;">Site settings</h2>
+      <div class="form-card" style="max-width:520px;margin-bottom:24px;">
+        <form id="settingsForm">
+          <div class="field"><label for="stSiteName">Site name</label><input id="stSiteName" value="${escapeHtml(s.siteName)}"></div>
+          <div class="field"><label for="stPhone">Contact phone</label><input id="stPhone" value="${escapeHtml(s.phone)}"></div>
+          <div class="field"><label for="stEmail">Contact email</label><input id="stEmail" type="email" value="${escapeHtml(s.email)}"></div>
+          <div class="field"><label for="stAddress">Address</label><input id="stAddress" value="${escapeHtml(s.address)}"></div>
+          <div class="field"><label for="stFreeShip">Free delivery threshold (₹)</label><input id="stFreeShip" type="number" min="0" value="${s.freeShipThreshold}"></div>
+          <div class="field"><label for="stShipCost">Delivery cost below threshold (₹)</label><input id="stShipCost" type="number" min="0" value="${s.shipCost}"></div>
+          <button class="btn btn-primary" type="submit">Save settings</button>
+        </form>
+      </div>
+      <h2 style="font-size:20px;margin-bottom:14px;">Backup &amp; restore</h2>
+      <div class="form-card" style="max-width:520px;">
+        <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;">Export all admin data (products, categories, homepage content, orders, settings) as a JSON file, or restore from a previous export. Data lives in this browser's storage only.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" id="exportDataBtn">Export data</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;">Import data<input type="file" id="importDataFile" accept="application/json" style="display:none;"></label>
+        </div>
       </div>
     </div>
   </section>`;
@@ -2256,6 +2531,90 @@ function afterAdminPanel(){
       render();
     });
   }
+
+  /* ---- Orders tab ---- */
+  const statusSelect = document.getElementById("orderStatusSelect");
+  if(statusSelect){
+    statusSelect.addEventListener("change", ()=>{
+      AdminStore.updateOrderStatus(statusSelect.dataset.orderId, statusSelect.value);
+      showToast("Order status updated");
+      render();
+    });
+  }
+  document.querySelectorAll("[data-del-order]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(confirm("Delete this order? This cannot be undone.")){
+        AdminStore.deleteOrder(btn.getAttribute("data-del-order"));
+        showToast("Order deleted");
+        location.hash = "#/admin/panel?tab=orders";
+        render();
+      }
+    });
+  });
+
+  /* ---- Settings tab ---- */
+  const settingsForm = document.getElementById("settingsForm");
+  if(settingsForm){
+    settingsForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const v = id=>document.getElementById(id).value;
+      AdminStore.saveSettings({
+        siteName: v("stSiteName").trim(),
+        phone: v("stPhone").trim(),
+        email: v("stEmail").trim(),
+        address: v("stAddress").trim(),
+        freeShipThreshold: Number(v("stFreeShip")) || 0,
+        shipCost: Number(v("stShipCost")) || 0
+      });
+      showToast("Settings saved");
+      render();
+    });
+  }
+  const exportBtn = document.getElementById("exportDataBtn");
+  if(exportBtn){
+    exportBtn.addEventListener("click", ()=>{
+      const data = {
+        products: AdminStore.getOverrides(),
+        deleted: AdminStore.getDeleted(),
+        categories: AdminStore.getCatOverrides(),
+        home: AdminStore.getHome(),
+        orders: AdminStore.getOrders(),
+        settings: AdminStore.getSettings(),
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "prabot-admin-backup.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showToast("Backup downloaded");
+    });
+  }
+  const importFile = document.getElementById("importDataFile");
+  if(importFile){
+    importFile.addEventListener("change", ()=>{
+      const file = importFile.files && importFile.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          if(data.products) AdminStore.write(AdminStore.prodKey, data.products);
+          if(data.deleted) AdminStore.write(AdminStore.delKey, data.deleted);
+          if(data.categories) AdminStore.write(AdminStore.catKey, data.categories);
+          if(data.home) AdminStore.write(AdminStore.homeKey, data.home);
+          if(data.orders) AdminStore.saveOrders(data.orders);
+          if(data.settings) AdminStore.saveSettings(data.settings);
+          showToast("Data restored");
+          render();
+        }catch(err){
+          showToast("Invalid backup file");
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
 }
 
 
@@ -2316,6 +2675,8 @@ function render(){
     case "search": html = viewSearch(params); after = ()=>afterSearch(params); break;
     case "product": html = viewProduct(id); after = ()=>afterProduct(id); break;
     case "cart": html = viewCart(); after = afterCart; break;
+    case "checkout": html = viewCheckout(); after = afterCheckout; break;
+    case "order-confirmed": html = viewOrderConfirmed(id); break;
     case "wishlist": html = viewWishlist(); break;
     case "about": html = viewAbout(); break;
     case "contact": html = viewContact(); after = afterContact; break;
