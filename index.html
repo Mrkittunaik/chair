@@ -692,6 +692,37 @@ const BASE_CATEGORY_LABELS = {
   office: "Office", gaming: "Gaming", sofas: "Living Room", tables: "Tables & Workspaces",
   bedroom: "Bedroom", dining: "Dining", lighting: "Lighting", outdoor: "Outdoor", decor: "Decor"
 };
+/* Fixed groups — admin can NOT add, remove or rename these. Every category must belong to one. */
+const FIXED_GROUPS = Object.keys(BASE_CATEGORY_LABELS);
+
+/* Base product categories (e.g. "Office Chair") — admin CAN add/edit/delete these, each tied to a fixed group. */
+const BASE_CATEGORIES = [
+  { id: "office-office-chair", name: "Office Chair", group: "office" },
+  { id: "office-office-desk", name: "Office Desk", group: "office" },
+  { id: "office-office-table", name: "Office Table", group: "office" },
+  { id: "office-conference-table", name: "Conference Table", group: "office" },
+  { id: "office-storage", name: "Storage", group: "office" },
+  { id: "office-side-table", name: "Side Table", group: "office" },
+  { id: "office-reception-desk", name: "Reception Desk", group: "office" },
+  { id: "gaming-gaming-chair", name: "Gaming Chair", group: "gaming" },
+  { id: "gaming-gaming-desk", name: "Gaming Desk", group: "gaming" },
+  { id: "gaming-storage", name: "Storage", group: "gaming" },
+  { id: "sofas-sofa", name: "Sofa", group: "sofas" },
+  { id: "sofas-lounge-chair", name: "Lounge Chair", group: "sofas" },
+  { id: "sofas-accent-chair", name: "Accent Chair", group: "sofas" },
+  { id: "tables-coffee-table", name: "Coffee Table", group: "tables" },
+  { id: "tables-workstation", name: "Workstation", group: "tables" },
+  { id: "tables-dining-table", name: "Dining Table", group: "tables" },
+  { id: "bedroom-bed", name: "Bed", group: "bedroom" },
+  { id: "bedroom-storage", name: "Storage", group: "bedroom" },
+  { id: "bedroom-side-table", name: "Side Table", group: "bedroom" },
+  { id: "dining-dining-chair", name: "Dining Chair", group: "dining" },
+  { id: "lighting-floor-lamp", name: "Floor Lamp", group: "lighting" },
+  { id: "lighting-pendant-light", name: "Pendant Light", group: "lighting" },
+  { id: "outdoor-outdoor-sofa", name: "Outdoor Sofa", group: "outdoor" },
+  { id: "outdoor-outdoor-dining", name: "Outdoor Dining", group: "outdoor" },
+  { id: "decor-decor", name: "Decor", group: "decor" }
+];
 
 /* ---------------- Admin data layer ----------------
    Base PRODUCTS / BASE_CATEGORY_LABELS above are the built-in catalogue (read-only, ship with the site).
@@ -700,7 +731,8 @@ const BASE_CATEGORY_LABELS = {
 const AdminStore = {
   prodKey: "prabot_admin_products",   // { [id]: productObject }  -- add or override
   delKey: "prabot_admin_deleted",     // [ id, id, ... ]          -- ids of base products hidden by admin
-  catKey: "prabot_admin_categories",  // { [group]: label }       -- add or override category labels
+  catKey: "prabot_admin_categories",  // { [id]: {id,name,group} } -- admin-created/edited categories (group is fixed, never editable)
+  catDelKey: "prabot_admin_cat_deleted", // [ id, id, ... ]        -- ids of base categories hidden by admin
   pinKey: "prabot_admin_pin",
   sessKey: "prabot_admin_session",
   homeKey: "prabot_admin_home",   // { hero:{...}, about:{...}, promo:{...}, collections:[...] } -- overrides merged onto defaults
@@ -713,6 +745,7 @@ const AdminStore = {
   getOverrides(){ return this.read(this.prodKey, {}); },
   getDeleted(){ return this.read(this.delKey, []); },
   getCatOverrides(){ return this.read(this.catKey, {}); },
+  getCatDeleted(){ return this.read(this.catDelKey, []); },
 
   /* ---- Orders ---- */
   getOrders(){ return this.read(this.orderKey, []); },
@@ -771,11 +804,20 @@ const AdminStore = {
     return "p"+String(n).padStart(2,"0");
   },
 
-  upsertCategory(group, label){
-    const c = this.getCatOverrides(); c[group] = label; this.write(this.catKey, c);
+  /* Category = { id, name, group }. group must be one of FIXED_GROUPS and can't be changed via this API's caller
+     (the UI never offers a way to edit group on an existing category). */
+  upsertCategory(cat){
+    const c = this.getCatOverrides(); c[cat.id] = cat; this.write(this.catKey, c);
   },
-  deleteCategory(group){
-    const c = this.getCatOverrides(); delete c[group]; this.write(this.catKey, c);
+  deleteCategory(id){
+    const c = this.getCatOverrides(); delete c[id]; this.write(this.catKey, c);
+    const d = this.getCatDeleted(); if(!d.includes(id)){ d.push(id); this.write(this.catDelKey, d); }
+  },
+  nextCategoryId(group){
+    const all = allCategories();
+    let n = 1;
+    while(all.some(c=>c.id === group+"-c"+n)) n++;
+    return group+"-c"+n;
   },
 
   /* ---- PIN / session ---- */
@@ -798,7 +840,22 @@ function allProducts(){
   return merged;
 }
 function allCategoryLabels(){
-  return Object.assign({}, BASE_CATEGORY_LABELS, AdminStore.getCatOverrides());
+  return Object.assign({}, BASE_CATEGORY_LABELS);
+}
+
+/* All product categories (e.g. "Office Chair"), merging admin-created/edited ones over the base list.
+   Groups themselves (office, gaming, ...) are fixed — see FIXED_GROUPS — and never editable here. */
+function allCategories(){
+  const overrides = AdminStore.getCatOverrides();
+  const deleted = new Set(AdminStore.getCatDeleted());
+  const merged = BASE_CATEGORIES.filter(c=>!deleted.has(c.id)).map(c=> overrides[c.id] ? overrides[c.id] : c);
+  Object.keys(overrides).forEach(id=>{
+    if(!BASE_CATEGORIES.some(c=>c.id===id)) merged.push(overrides[id]);
+  });
+  return merged;
+}
+function categoriesByGroup(group){
+  return allCategories().filter(c=>c.group===group);
 }
 
 function formatINR(n){ return "₹" + n.toLocaleString("en-IN"); }
@@ -1980,11 +2037,19 @@ function adminTabBar(active){
 function viewAdminPanel(params){
   const products = allProducts();
   const cats = allCategoryLabels();
+  const categories = allCategories();
   const tab = params.tab || "dashboard";
   const editId = params.edit || "";
   const editing = editId ? products.find(p=>p.id===editId) : null;
 
-  const catOptions = Object.keys(cats).map(g=>`<option value="${g}" ${editing && editing.group===g ? "selected":""}>${cats[g]}</option>`).join("");
+  /* Product form's category dropdown: grouped by the fixed groups, options are admin-managed categories.
+     Choosing a category also fixes the product's group (category.group), so group is never picked directly. */
+  const catOptions = FIXED_GROUPS.map(g=>{
+    const opts = categoriesByGroup(g).map(c=>
+      `<option value="${c.id}" ${editing && editing.category===c.name && editing.group===g ? "selected":""}>${escapeHtml(c.name)}</option>`
+    ).join("");
+    return opts ? `<optgroup label="${escapeHtml(cats[g]||g)}">${opts}</optgroup>` : "";
+  }).join("");
 
   const head = `
   <section class="page-head">
@@ -2001,7 +2066,7 @@ function viewAdminPanel(params){
 
   if(tab === "dashboard") return head + viewAdminDashboard(products, cats);
   if(tab === "homepage") return head + viewAdminHomepage();
-  if(tab === "categories") return head + viewAdminCategories(cats, products);
+  if(tab === "categories") return head + viewAdminCategories(cats, products, params);
   if(tab === "orders") return head + viewAdminOrders(params);
   if(tab === "settings") return head + viewAdminSettings();
   return head + viewAdminProducts(products, cats, editing, catOptions);
@@ -2019,7 +2084,7 @@ function viewAdminDashboard(products, cats){
       <div class="dash-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
         ${[
           ["Total products", products.length],
-          ["Categories", Object.keys(cats).length],
+          ["Categories", allCategories().length],
           ["Featured products", featured],
           ["Orders", orders.length],
           ["Pending orders", pending],
@@ -2167,28 +2232,60 @@ function viewAdminSettings(){
   </section>`;
 }
 
-function viewAdminCategories(cats, products){
+function viewAdminCategories(cats, products, params){
+  const categories = allCategories();
+  const editId = params && params.editCat || "";
+  const editing = editId ? categories.find(c=>c.id===editId) : null;
+  const groupOptions = FIXED_GROUPS.map(g=>`<option value="${g}" ${editing && editing.group===g ? "selected":""}>${escapeHtml(cats[g]||g)}</option>`).join("");
+
   return `
   <section class="section">
     <div class="container">
-      <h2 style="font-size:20px;margin-bottom:14px;">Categories</h2>
+      <h2 style="font-size:20px;margin-bottom:6px;">Rooms / groups</h2>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 14px;">Fixed — these 9 can't be added, removed or renamed. Every category below belongs to one.</p>
+      <div class="admin-table-wrap" style="margin-bottom:32px;">
+        <table class="admin-table">
+          <thead><tr><th>Group key</th><th>Label</th><th>Categories</th><th>Products</th></tr></thead>
+          <tbody>
+            ${FIXED_GROUPS.map(g=>`
+              <tr>
+                <td>${g}</td>
+                <td>${escapeHtml(cats[g])}</td>
+                <td>${categories.filter(c=>c.group===g).length}</td>
+                <td>${products.filter(p=>p.group===g).length}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 style="font-size:20px;margin-bottom:14px;">${editing ? "Edit category" : "Categories"}</h2>
       <div class="form-card" style="max-width:520px;margin-bottom:18px;">
         <form id="adminCategoryForm">
-          <div class="field"><label for="cfGroup">Group key (e.g. "outdoor", no spaces)</label><input id="cfGroup" required pattern="[a-z0-9\\-]+" placeholder="e.g. patio"></div>
-          <div class="field"><label for="cfLabel">Display label</label><input id="cfLabel" required placeholder="e.g. Patio &amp; Garden"></div>
-          <button class="btn btn-secondary" type="submit">Add / update category</button>
+          <input type="hidden" id="cfId" value="${editing ? editing.id : ""}">
+          <div class="field"><label for="cfName">Category name (e.g. "Office Chair")</label><input id="cfName" required value="${editing ? escapeHtml(editing.name) : ""}"></div>
+          <div class="field"><label for="cfGroupSel">Room / group</label>
+            <select id="cfGroupSel" required ${editing ? "disabled" : ""}>${groupOptions}</select>
+            ${editing ? `<p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">Group can't be changed once created — delete and re-add in a different group if needed.</p>` : ""}
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" type="submit">${editing ? "Save changes" : "Add category"}</button>
+            ${editing ? `<a href="#/admin/panel?tab=categories" class="btn btn-ghost">Cancel</a>` : ""}
+          </div>
         </form>
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
-          <thead><tr><th>Group key</th><th>Label</th><th>Products</th><th></th></tr></thead>
+          <thead><tr><th>Category</th><th>Group</th><th>Products</th><th></th></tr></thead>
           <tbody>
-            ${Object.keys(cats).map(g=>`
+            ${categories.map(c=>`
               <tr>
-                <td>${g}</td>
-                <td>${escapeHtml(cats[g])}</td>
-                <td>${products.filter(p=>p.group===g).length}</td>
-                <td><button class="btn btn-sm btn-ghost" data-del-cat="${g}">Remove</button></td>
+                <td>${escapeHtml(c.name)}</td>
+                <td>${escapeHtml(cats[c.group]||c.group)}</td>
+                <td>${products.filter(p=>p.category===c.name && p.group===c.group).length}</td>
+                <td>
+                  <a href="#/admin/panel?tab=categories&editCat=${c.id}" class="btn btn-sm btn-ghost">Edit</a>
+                  <button class="btn btn-sm btn-ghost" data-del-cat="${c.id}">Remove</button>
+                </td>
               </tr>`).join("")}
           </tbody>
         </table>
@@ -2206,9 +2303,12 @@ function viewAdminProducts(products, cats, editing, catOptions){
         <form id="adminProductForm">
           <input type="hidden" id="pfId" value="${editing ? editing.id : ""}">
           <div class="field"><label for="pfName">Name</label><input id="pfName" required value="${editing ? escapeHtml(editing.name) : ""}"></div>
-          <div class="field"><label for="pfCategory">Category label (e.g. "Office Chair")</label><input id="pfCategory" required value="${editing ? escapeHtml(editing.category) : ""}"></div>
-          <div class="field"><label for="pfGroup">Room / group</label>
-            <select id="pfGroup" required>${catOptions}</select>
+          <div class="field"><label for="pfCategoryId">Category</label>
+            <select id="pfCategoryId" required>
+              <option value="" disabled ${editing?"":"selected"}>Select a category…</option>
+              ${catOptions}
+            </select>
+            <p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">Don't see the right one? <a href="#/admin/panel?tab=categories">Add a category</a> first — categories belong to a fixed room/group.</p>
           </div>
           <div class="field"><label for="pfPrice">Price (₹)</label><input id="pfPrice" type="number" min="0" step="1" required value="${editing ? editing.price : ""}"></div>
           <div class="field"><label for="pfMaterial">Material</label><input id="pfMaterial" value="${editing ? escapeHtml(editing.material||"") : ""}"></div>
@@ -2383,13 +2483,15 @@ function afterAdminPanel(){
     productForm.addEventListener("submit", e=>{
       e.preventDefault();
       const id = document.getElementById("pfId").value || AdminStore.nextId();
-      const group = document.getElementById("pfGroup").value;
+      const catId = document.getElementById("pfCategoryId").value;
+      const cat = allCategories().find(c=>c.id===catId);
+      if(!cat){ showToast("Pick a category"); return; }
       const existingImg = document.getElementById("pfImg").value;
       const p = {
         id,
         name: document.getElementById("pfName").value.trim(),
-        category: document.getElementById("pfCategory").value.trim(),
-        group,
+        category: cat.name,
+        group: cat.group,
         price: Number(document.getElementById("pfPrice").value) || 0,
         img: existingImg || (findProduct(id) && findProduct(id).img) || Object.values(IMG)[0],
         rating: Number(document.getElementById("pfRating").value) || 4.5,
@@ -2420,22 +2522,34 @@ function afterAdminPanel(){
   if(catForm){
     catForm.addEventListener("submit", e=>{
       e.preventDefault();
-      const group = document.getElementById("cfGroup").value.trim().toLowerCase();
-      const label = document.getElementById("cfLabel").value.trim();
-      if(!group || !label) return;
-      AdminStore.upsertCategory(group, label);
-      showToast("Category saved");
-      render();
+      const existingId = document.getElementById("cfId").value;
+      const name = document.getElementById("cfName").value.trim();
+      if(!name) return;
+      let cat;
+      if(existingId){
+        // Editing: group is fixed/disabled in the form, so keep the category's existing group.
+        const current = allCategories().find(c=>c.id===existingId);
+        cat = { id: existingId, name, group: current ? current.group : document.getElementById("cfGroupSel").value };
+      } else {
+        const group = document.getElementById("cfGroupSel").value;
+        if(!FIXED_GROUPS.includes(group)) return;
+        cat = { id: AdminStore.nextCategoryId(group), name, group };
+      }
+      AdminStore.upsertCategory(cat);
+      showToast(existingId ? "Category updated" : "Category added");
+      location.hash = "#/admin/panel?tab=categories";
+      if(location.hash === "#/admin/panel?tab=categories") render();
     });
   }
 
   document.querySelectorAll("[data-del-cat]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
-      const g = btn.getAttribute("data-del-cat");
-      const inUse = allProducts().some(p=>p.group===g);
+      const id = btn.getAttribute("data-del-cat");
+      const cat = allCategories().find(c=>c.id===id);
+      const inUse = cat && allProducts().some(p=>p.category===cat.name && p.group===cat.group);
       if(inUse){ showToast("Can't remove — products still use this category"); return; }
       if(confirm("Remove this category?")){
-        AdminStore.deleteCategory(g);
+        AdminStore.deleteCategory(id);
         showToast("Category removed");
         render();
       }
@@ -2577,6 +2691,7 @@ function afterAdminPanel(){
         products: AdminStore.getOverrides(),
         deleted: AdminStore.getDeleted(),
         categories: AdminStore.getCatOverrides(),
+        categoriesDeleted: AdminStore.getCatDeleted(),
         home: AdminStore.getHome(),
         orders: AdminStore.getOrders(),
         settings: AdminStore.getSettings(),
@@ -2603,6 +2718,7 @@ function afterAdminPanel(){
           if(data.products) AdminStore.write(AdminStore.prodKey, data.products);
           if(data.deleted) AdminStore.write(AdminStore.delKey, data.deleted);
           if(data.categories) AdminStore.write(AdminStore.catKey, data.categories);
+          if(data.categoriesDeleted) AdminStore.write(AdminStore.catDelKey, data.categoriesDeleted);
           if(data.home) AdminStore.write(AdminStore.homeKey, data.home);
           if(data.orders) AdminStore.saveOrders(data.orders);
           if(data.settings) AdminStore.saveSettings(data.settings);
