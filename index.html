@@ -250,6 +250,11 @@ select{padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius
 .value-card p{font-size:13.5px;color:var(--ink-soft);}
 .contact-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:38px;align-items:start;}
 .form-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);padding:26px;}
+.admin-table-wrap{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);}
+.admin-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+.admin-table th,.admin-table td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.admin-table th{color:var(--ink-soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;}
+.admin-table tr:last-child td{border-bottom:none;}
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;}
 .field input,.field textarea,.field select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius);background:var(--stone);}
@@ -683,10 +688,83 @@ const PRODUCTS = [
   { id: "p42", name: "Ceramic Table Vase", category: "Decor", group: "decor", price: 2499, img: IMG.decor1, rating: 4.4, material: "Ceramic", color: "Off-White", desc: "A handcrafted ceramic vase to finish a styled tabletop." },
 ];
 
-const CATEGORY_LABELS = {
+const BASE_CATEGORY_LABELS = {
   office: "Office", gaming: "Gaming", sofas: "Living Room", tables: "Tables & Workspaces",
   bedroom: "Bedroom", dining: "Dining", lighting: "Lighting", outdoor: "Outdoor", decor: "Decor"
 };
+
+/* ---------------- Admin data layer ----------------
+   Base PRODUCTS / BASE_CATEGORY_LABELS above are the built-in catalogue (read-only, ship with the site).
+   Admin-created/edited products and categories live in localStorage and are merged in at read time,
+   so the rest of the app (shop, search, home, product page) never needs to know the difference. */
+const AdminStore = {
+  prodKey: "prabot_admin_products",   // { [id]: productObject }  -- add or override
+  delKey: "prabot_admin_deleted",     // [ id, id, ... ]          -- ids of base products hidden by admin
+  catKey: "prabot_admin_categories",  // { [group]: label }       -- add or override category labels
+  pinKey: "prabot_admin_pin",
+  sessKey: "prabot_admin_session",
+  homeKey: "prabot_admin_home",   // { hero:{...}, about:{...}, promo:{...}, collections:[...] } -- overrides merged onto defaults
+
+  read(k, fallback){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?fallback:v; }catch(e){ return fallback; } },
+  write(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+
+  getOverrides(){ return this.read(this.prodKey, {}); },
+  getDeleted(){ return this.read(this.delKey, []); },
+  getCatOverrides(){ return this.read(this.catKey, {}); },
+
+  /* ---- Homepage content ---- */
+  getHome(){ return this.read(this.homeKey, {}); },
+  saveHome(partial){
+    const cur = this.getHome();
+    this.write(this.homeKey, Object.assign({}, cur, partial));
+  },
+
+  upsertProduct(p){
+    const o = this.getOverrides(); o[p.id] = p; this.write(this.prodKey, o);
+  },
+  deleteProduct(id){
+    const o = this.getOverrides(); delete o[id]; this.write(this.prodKey, o);
+    const d = this.getDeleted(); if(!d.includes(id)){ d.push(id); this.write(this.delKey, d); }
+  },
+  restoreProduct(id){
+    const d = this.getDeleted().filter(x=>x!==id); this.write(this.delKey, d);
+  },
+  nextId(){
+    const all = allProducts();
+    let n = all.length + 1;
+    while(all.some(p=>p.id === "p"+String(n).padStart(2,"0"))) n++;
+    return "p"+String(n).padStart(2,"0");
+  },
+
+  upsertCategory(group, label){
+    const c = this.getCatOverrides(); c[group] = label; this.write(this.catKey, c);
+  },
+  deleteCategory(group){
+    const c = this.getCatOverrides(); delete c[group]; this.write(this.catKey, c);
+  },
+
+  /* ---- PIN / session ---- */
+  hasPin(){ return !!this.read(this.pinKey, null); },
+  setPin(pin){ this.write(this.pinKey, String(pin)); },
+  checkPin(pin){ return this.read(this.pinKey, null) === String(pin); },
+  isLoggedIn(){ return this.read(this.sessKey, false) === true; },
+  login(){ this.write(this.sessKey, true); },
+  logout(){ this.write(this.sessKey, false); }
+};
+
+function allProducts(){
+  const overrides = AdminStore.getOverrides();
+  const deleted = new Set(AdminStore.getDeleted());
+  const merged = PRODUCTS.filter(p=>!deleted.has(p.id)).map(p=> overrides[p.id] ? overrides[p.id] : p);
+  // add admin-created products not present in base list
+  Object.keys(overrides).forEach(id=>{
+    if(!PRODUCTS.some(p=>p.id===id)) merged.push(overrides[id]);
+  });
+  return merged;
+}
+function allCategoryLabels(){
+  return Object.assign({}, BASE_CATEGORY_LABELS, AdminStore.getCatOverrides());
+}
 
 function formatINR(n){ return "₹" + n.toLocaleString("en-IN"); }
 
@@ -732,7 +810,7 @@ const Store = {
   inWish(id){ return this.getWish().includes(id); },
   toggleWish(id){ const w=this.getWish(); const i=w.indexOf(id); if(i>-1) w.splice(i,1); else w.push(id); this.setWish(w); return w.includes(id); }
 };
-function findProduct(id){ return PRODUCTS.find(p=>p.id===id); }
+function findProduct(id){ return allProducts().find(p=>p.id===id); }
 
 /* ---------------- Icons ---------------- */
 const ICONS = {
@@ -858,7 +936,7 @@ function renderFooter(){
       </div>
       <div class="footer-base">
         <span>© ${new Date().getFullYear()} Prabot Furniture, Hyderabad</span>
-        <span>Free delivery and installation on orders above ₹25,000</span>
+        <span>Free delivery and installation on orders above ₹25,000 · <a href="#/admin" style="opacity:.45;font-size:11px;">Admin</a></span>
       </div>
     </div>
   </footer>`;
@@ -929,10 +1007,10 @@ function searchProducts(query){
   const q = query.trim().toLowerCase();
   if(!q) return [];
   const terms = q.split(/\s+/);
-  return PRODUCTS.map(p=>{
+  return allProducts().map(p=>{
     const hay = {
       name: p.name.toLowerCase(),
-      cat: (p.category + " " + (CATEGORY_LABELS[p.group]||p.group)).toLowerCase(),
+      cat: (p.category + " " + (allCategoryLabels()[p.group]||p.group)).toLowerCase(),
       rest: (p.material + " " + p.color + " " + p.desc).toLowerCase()
     };
     let score = 0, all = true;
@@ -1024,7 +1102,7 @@ function afterSearch(params){
           <a href="#/shop" class="btn btn-secondary">Browse all furniture</a>
         </div>
         <div class="section-head" style="margin-top:48px;"><h2>Most loved right now</h2></div>
-        <div class="product-grid">${sortList(PRODUCTS,"rating").slice(0,8).map(productCardHTML).join("")}</div>`;
+        <div class="product-grid">${sortList(allProducts(),"rating").slice(0,8).map(productCardHTML).join("")}</div>`;
       return;
     }
     if(results.length === 0){
@@ -1043,7 +1121,7 @@ function afterSearch(params){
       `<button class="chip ${group==='all'?'on':''}" data-facet="all">All (${results.length})</button>` +
       groups.map(g=>{
         const n = results.filter(p=>p.group===g).length;
-        return `<button class="chip ${group===g?'on':''}" data-facet="${g}">${CATEGORY_LABELS[g]||g} (${n})</button>`;
+        return `<button class="chip ${group===g?'on':''}" data-facet="${g}">${allCategoryLabels()[g]||g} (${n})</button>`;
       }).join("");
 
     const filtered = group==="all" ? results : results.filter(p=>p.group===group);
@@ -1083,7 +1161,68 @@ function afterSearch(params){
 }
 
 /* ---------------- View: Home ---------------- */
+/* Default homepage content -- reproduces the original hardcoded homepage exactly.
+   Admin edits are shallow-merged on top of this via AdminStore.getHome(), so the
+   site always has a complete, valid value even before the admin ever saves anything. */
+function defaultHomeContent(){
+  return {
+    hero: {
+      kicker: "New for 2026",
+      heading: "Furniture you will still like in ten years.",
+      lead: "Solid wood, honest upholstery, and joinery that holds. Made for homes and workspaces in India, delivered and installed by our own team.",
+      btn1Text: "Shop all furniture", btn1Link: "#/shop",
+      btn2Text: "Search the catalogue", btn2Link: "#/search",
+      mark1Num: "42", mark1Label: "pieces in stock",
+      mark2Num: "10 yrs", mark2Label: "of workshop craft",
+      mark3Num: "Free", mark3Label: "install above ₹25,000",
+      img: IMG.livingRoomHero, alt: "Living room with a fabric sofa, lounge chair and low coffee table",
+      visible: true
+    },
+    catRail: { title: "Shop by room", visible: true },
+    collectionsSection: { title: "Collections", sub: "Pieces grouped the way rooms actually come together.", visible: true },
+    collections: [
+      {title:"Sofas that hold a room together",label:"Living room",img:IMG.collectionLiving,href:"#/shop?cat=sofas"},
+      {title:"Desks and chairs for long working days",label:"Office",img:IMG.collectionOffice,href:"#/shop?cat=office"},
+      {title:"Beds, wardrobes and quiet corners",label:"Bedroom",img:IMG.collectionBedroom,href:"#/shop?cat=bedroom"},
+      {title:"Tables built for long dinners",label:"Dining",img:IMG.collectionDining,href:"#/shop?cat=dining"},
+      {title:"Weather-ready seating for the outdoors",label:"Outdoor",img:IMG.collectionOutdoor,href:"#/shop?cat=outdoor"},
+      {title:"Setups made for late-night play",label:"Gaming",img:IMG.collectionGaming,href:"#/shop?cat=gaming"}
+    ],
+    featured1: { group: "office", title: "Office", sub: "Chairs, desks and storage for focused work.", visible: true },
+    featured2: { group: "gaming", title: "Gaming", sub: "Desks and seating that survive long sessions.", visible: true },
+    about: {
+      heading: "Built in our own workshop, not bought off a container.",
+      body: "Every frame is cut, joined and finished by a team we know by name. If something loosens in the first five years, we come and fix it.",
+      img: IMG.aboutBanner, alt: "Workshop bench with tools and timber",
+      stat1Num: "10+", stat1Label: "Years of craft",
+      stat2Num: "800+", stat2Label: "Homes furnished",
+      stat3Num: "5 yr", stat3Label: "Frame warranty",
+      visible: true
+    },
+    promo: {
+      heading: "Not sure where to start?",
+      body: "Tell us the room, the size and the budget. We will send back three options and a delivery date.",
+      btnText: "Ask for a plan", btnLink: "#/contact",
+      img: IMG.bannerSofa, alt: "Sofa and lounge chair in a bright room",
+      visible: true
+    },
+    newArrivals: { title: "New arrivals", visible: true }
+  };
+}
+/* Deep-ish merge: admin overrides replace matching top-level keys' fields, arrays replace wholesale. */
+function homeContent(){
+  const d = defaultHomeContent();
+  const o = AdminStore.getHome();
+  const out = {};
+  Object.keys(d).forEach(k=>{
+    if(Array.isArray(d[k])) out[k] = o[k] || d[k];
+    else out[k] = Object.assign({}, d[k], o[k] || {});
+  });
+  return out;
+}
+
 function viewHome(){
+  const H = homeContent();
   const categories = [
     {key:"office",label:"Office",img:IMG.collectionOffice},
     {key:"gaming",label:"Gaming",img:IMG.collectionGaming},
@@ -1095,127 +1234,133 @@ function viewHome(){
     {key:"outdoor",label:"Outdoor",img:IMG.outdoor1},
     {key:"decor",label:"Decor",img:IMG.decor1}
   ];
-  const collections = [
-    {title:"Sofas that hold a room together",label:"Living room",img:IMG.collectionLiving,href:"#/shop?cat=sofas"},
-    {title:"Desks and chairs for long working days",label:"Office",img:IMG.collectionOffice,href:"#/shop?cat=office"},
-    {title:"Beds, wardrobes and quiet corners",label:"Bedroom",img:IMG.collectionBedroom,href:"#/shop?cat=bedroom"},
-    {title:"Tables built for long dinners",label:"Dining",img:IMG.collectionDining,href:"#/shop?cat=dining"},
-    {title:"Weather-ready seating for the outdoors",label:"Outdoor",img:IMG.collectionOutdoor,href:"#/shop?cat=outdoor"},
-    {title:"Setups made for late-night play",label:"Gaming",img:IMG.collectionGaming,href:"#/shop?cat=gaming"}
-  ];
+  const cats = allCategoryLabels();
+  const collections = H.collections;
   return `
+  ${H.hero.visible ? `
   <section class="hero">
     <div class="container hero-grid">
       <div class="hero-copy-anim">
-        <p class="kicker">New for 2026</p>
-        <h1>Furniture you will still like in ten years.</h1>
-        <p class="lead">Solid wood, honest upholstery, and joinery that holds. Made for homes and workspaces in India, delivered and installed by our own team.</p>
+        <p class="kicker">${escapeHtml(H.hero.kicker)}</p>
+        <h1>${escapeHtml(H.hero.heading)}</h1>
+        <p class="lead">${escapeHtml(H.hero.lead)}</p>
         <div class="hero-actions">
-          <a href="#/shop" class="btn btn-primary">Shop all furniture</a>
-          <a href="#/search" class="btn btn-secondary">Search the catalogue</a>
+          <a href="${H.hero.btn1Link}" class="btn btn-primary">${escapeHtml(H.hero.btn1Text)}</a>
+          <a href="${H.hero.btn2Link}" class="btn btn-secondary">${escapeHtml(H.hero.btn2Text)}</a>
         </div>
         <div class="hero-marks">
-          <div><strong>42</strong>pieces in stock</div>
-          <div><strong>10 yrs</strong>of workshop craft</div>
-          <div><strong>Free</strong>install above ₹25,000</div>
+          <div><strong>${escapeHtml(H.hero.mark1Num)}</strong>${escapeHtml(H.hero.mark1Label)}</div>
+          <div><strong>${escapeHtml(H.hero.mark2Num)}</strong>${escapeHtml(H.hero.mark2Label)}</div>
+          <div><strong>${escapeHtml(H.hero.mark3Num)}</strong>${escapeHtml(H.hero.mark3Label)}</div>
         </div>
       </div>
-      <div class="hero-image img-wrap shimmer"><img src="${IMG.livingRoomHero}" ${fb("sofas")} alt="Living room with a fabric sofa, lounge chair and low coffee table"></div>
+      <div class="hero-image img-wrap shimmer"><img src="${H.hero.img}" ${fb("sofas")} alt="${escapeHtml(H.hero.alt)}"></div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.catRail.visible ? `
   <section class="section">
     <div class="container">
-      <div class="section-head"><h2>Shop by room</h2><a href="#/shop" class="view-all">See everything</a></div>
+      <div class="section-head"><h2>${escapeHtml(H.catRail.title)}</h2><a href="#/shop" class="view-all">See everything</a></div>
       <div class="cat-rail">
-        ${categories.map(c=>`
+        ${categories.filter(c=>cats[c.key]).map(c=>`
           <a href="#/shop?cat=${c.key}" class="cat-card">
             <div class="cat-img img-wrap shimmer"><img src="${c.img}" ${fb(c.key)} alt="${c.label}" loading="lazy"></div>
-            <div class="cat-name">${c.label}</div>
+            <div class="cat-name">${cats[c.key]}</div>
           </a>`).join("")}
       </div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.collectionsSection.visible ? `
   <section class="section section-tight">
     <div class="container">
-      <div class="section-head"><div><h2>Collections</h2><p class="section-sub">Pieces grouped the way rooms actually come together.</p></div></div>
+      <div class="section-head"><div><h2>${escapeHtml(H.collectionsSection.title)}</h2><p class="section-sub">${escapeHtml(H.collectionsSection.sub)}</p></div></div>
       <div class="grid-collections">
         ${collections.map(c=>`
           <a href="${c.href}" class="collection-card">
             <img src="${c.img}" ${fb(c.href.split("cat=")[1]||"general")} alt="${escapeHtml(c.title)}" loading="lazy">
-            <div class="overlay"><div class="cname">${c.label}</div><div class="ctitle">${c.title}</div></div>
+            <div class="overlay"><div class="cname">${escapeHtml(c.label)}</div><div class="ctitle">${escapeHtml(c.title)}</div></div>
           </a>`).join("")}
       </div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.featured1.visible ? `
   <section class="section section-tight">
     <div class="container">
-      <div class="section-head"><div><h2>Office</h2><p class="section-sub">Chairs, desks and storage for focused work.</p></div><a href="#/shop?cat=office" class="view-all">View all</a></div>
-      <div class="product-grid" id="officePreview"></div>
+      <div class="section-head"><div><h2>${escapeHtml(H.featured1.title)}</h2><p class="section-sub">${escapeHtml(H.featured1.sub)}</p></div><a href="#/shop?cat=${H.featured1.group}" class="view-all">View all</a></div>
+      <div class="product-grid" id="featuredPreview1"></div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.featured2.visible ? `
   <section class="section section-tight">
     <div class="container">
-      <div class="section-head"><div><h2>Gaming</h2><p class="section-sub">Desks and seating that survive long sessions.</p></div><a href="#/shop?cat=gaming" class="view-all">View all</a></div>
-      <div class="product-grid" id="gamingPreview"></div>
+      <div class="section-head"><div><h2>${escapeHtml(H.featured2.title)}</h2><p class="section-sub">${escapeHtml(H.featured2.sub)}</p></div><a href="#/shop?cat=${H.featured2.group}" class="view-all">View all</a></div>
+      <div class="product-grid" id="featuredPreview2"></div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.about.visible ? `
   <section class="section section-tight">
     <div class="container about-grid">
-      <div class="about-img"><img src="${IMG.aboutBanner}" ${fb("general")} alt="Workshop bench with tools and timber" loading="lazy"></div>
+      <div class="about-img"><img src="${H.about.img}" ${fb("general")} alt="${escapeHtml(H.about.alt)}" loading="lazy"></div>
       <div>
-        <h2>Built in our own workshop, not bought off a container.</h2>
-        <p>Every frame is cut, joined and finished by a team we know by name. If something loosens in the first five years, we come and fix it.</p>
+        <h2>${escapeHtml(H.about.heading)}</h2>
+        <p>${escapeHtml(H.about.body)}</p>
         <div class="stat-row">
-          <div class="stat"><div class="num">10+</div><div class="lbl">Years of craft</div></div>
-          <div class="stat"><div class="num">800+</div><div class="lbl">Homes furnished</div></div>
-          <div class="stat"><div class="num">5 yr</div><div class="lbl">Frame warranty</div></div>
+          <div class="stat"><div class="num">${escapeHtml(H.about.stat1Num)}</div><div class="lbl">${escapeHtml(H.about.stat1Label)}</div></div>
+          <div class="stat"><div class="num">${escapeHtml(H.about.stat2Num)}</div><div class="lbl">${escapeHtml(H.about.stat2Label)}</div></div>
+          <div class="stat"><div class="num">${escapeHtml(H.about.stat3Num)}</div><div class="lbl">${escapeHtml(H.about.stat3Label)}</div></div>
         </div>
       </div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.promo.visible ? `
   <section class="section section-tight">
     <div class="container">
       <div class="promo">
-        <img src="${IMG.bannerSofa}" ${fb("sofas")} alt="Sofa and lounge chair in a bright room" loading="lazy">
+        <img src="${H.promo.img}" ${fb("sofas")} alt="${escapeHtml(H.promo.alt)}" loading="lazy">
         <div class="promo-in">
-          <h2>Not sure where to start?</h2>
-          <p>Tell us the room, the size and the budget. We will send back three options and a delivery date.</p>
-          <a href="#/contact" class="btn btn-primary">Ask for a plan</a>
+          <h2>${escapeHtml(H.promo.heading)}</h2>
+          <p>${escapeHtml(H.promo.body)}</p>
+          <a href="${H.promo.btnLink}" class="btn btn-primary">${escapeHtml(H.promo.btnText)}</a>
         </div>
       </div>
     </div>
-  </section>
+  </section>` : ""}
 
+  ${H.newArrivals.visible ? `
   <section class="section">
     <div class="container">
-      <div class="section-head"><h2>New arrivals</h2><a href="#/shop?sort=newest" class="view-all">View all</a></div>
+      <div class="section-head"><h2>${escapeHtml(H.newArrivals.title)}</h2><a href="#/shop?sort=newest" class="view-all">View all</a></div>
       <div class="product-grid" id="newArrivals"></div>
     </div>
-  </section>`;
+  </section>` : ""}`;
 }
 function afterHome(){
-  renderProductGrid(document.getElementById("officePreview"), PRODUCTS.filter(p=>p.group==="office").slice(0,4));
-  renderProductGrid(document.getElementById("gamingPreview"), PRODUCTS.filter(p=>p.group==="gaming").slice(0,4));
-  renderProductGrid(document.getElementById("newArrivals"), PRODUCTS.slice(-8).reverse());
+  const H = homeContent();
+  const p1 = document.getElementById("featuredPreview1");
+  const p2 = document.getElementById("featuredPreview2");
+  if(p1) renderProductGrid(p1, allProducts().filter(p=>p.group===H.featured1.group).slice(0,4));
+  if(p2) renderProductGrid(p2, allProducts().filter(p=>p.group===H.featured2.group).slice(0,4));
+  const na = document.getElementById("newArrivals");
+  if(na) renderProductGrid(na, allProducts().slice(-8).reverse());
 }
 
 /* ---------------- View: Shop ---------------- */
 function viewShop(params){
-  const groups = Object.keys(CATEGORY_LABELS);
+  const groups = Object.keys(allCategoryLabels());
   const active = params.cat || "";
-  const title = active ? CATEGORY_LABELS[active] || "All furniture" : "All furniture";
+  const title = active ? allCategoryLabels()[active] || "All furniture" : "All furniture";
   return `
   <section class="page-head">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / Shop</p>
       <h1 class="page-title" id="shopTitle">${title}</h1>
-      <p class="page-desc" id="shopDesc">Filter by room, price and material. ${PRODUCTS.length} pieces in the catalogue.</p>
+      <p class="page-desc" id="shopDesc">Filter by room, price and material. ${allProducts().length} pieces in the catalogue.</p>
     </div>
   </section>
   <section class="section">
@@ -1224,7 +1369,7 @@ function viewShop(params){
         <div class="filter-block">
           <h4>Room</h4>
           <label><input type="radio" name="cat" value="" ${!active?"checked":""}> All rooms</label>
-          ${groups.map(g=>`<label><input type="radio" name="cat" value="${g}" ${active===g?"checked":""}> ${CATEGORY_LABELS[g]}</label>`).join("")}
+          ${groups.map(g=>`<label><input type="radio" name="cat" value="${g}" ${active===g?"checked":""}> ${allCategoryLabels()[g]}</label>`).join("")}
         </div>
         <div class="filter-block">
           <h4>Price (₹)</h4>
@@ -1248,7 +1393,7 @@ function viewShop(params){
             <button class="filter-bar-btn" data-drop="cat">Room<span class="chev">▾</span></button>
             <div class="filter-drop" data-panel="cat">
               <label><input type="radio" name="catM" value="" ${!active?"checked":""}> All rooms</label>
-              ${groups.map(g=>`<label><input type="radio" name="catM" value="${g}" ${active===g?"checked":""}> ${CATEGORY_LABELS[g]}</label>`).join("")}
+              ${groups.map(g=>`<label><input type="radio" name="catM" value="${g}" ${active===g?"checked":""}> ${allCategoryLabels()[g]}</label>`).join("")}
             </div>
           </div>
           <div class="filter-bar-item">
@@ -1304,7 +1449,7 @@ function afterShop(params){
     const min = parseInt(document.getElementById("minPrice").value || document.getElementById("minPriceM").value, 10);
     const max = parseInt(document.getElementById("maxPrice").value || document.getElementById("maxPriceM").value, 10);
     const rate = document.getElementById("rate45").checked || document.getElementById("rate45M").checked;
-    let list = PRODUCTS.filter(p=>
+    let list = allProducts().filter(p=>
       (!cat || p.group===cat) &&
       (isNaN(min) || p.price>=min) &&
       (isNaN(max) || p.price<=max) &&
@@ -1312,7 +1457,7 @@ function afterShop(params){
     );
     list = sortList(list, sortSel.value);
     count.textContent = `${list.length} ${list.length===1?"piece":"pieces"}`;
-    document.getElementById("shopTitle").textContent = cat ? CATEGORY_LABELS[cat] : "All furniture";
+    document.getElementById("shopTitle").textContent = cat ? allCategoryLabels()[cat] : "All furniture";
     out.innerHTML = list.length
       ? `<div class="product-grid">${list.map(productCardHTML).join("")}</div>`
       : `<div class="empty-state"><h3>Nothing matches these filters</h3><p>Widen the price range or pick another room.</p><button class="btn btn-primary" id="resetInline">Clear filters</button></div>`;
@@ -1397,12 +1542,12 @@ function afterShop(params){
 function viewProduct(id){
   const p = findProduct(id);
   if(!p) return notFound();
-  const related = PRODUCTS.filter(x=>x.group===p.group && x.id!==p.id).slice(0,4);
+  const related = allProducts().filter(x=>x.group===p.group && x.id!==p.id).slice(0,4);
   const wished = Store.inWish(p.id);
   return `
   <section class="section">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / <a href="#/shop?cat=${p.group}">${CATEGORY_LABELS[p.group]}</a> / ${escapeHtml(p.name)}</p>
+      <p class="breadcrumb"><a href="#/">Home</a> / <a href="#/shop?cat=${p.group}">${allCategoryLabels()[p.group]}</a> / ${escapeHtml(p.name)}</p>
       <div class="pdp" style="margin-top:20px;">
         <div class="pdp-media img-wrap shimmer"><img src="${p.img}" ${fb(p.group)} alt="${escapeHtml(p.name)}"></div>
         <div>
@@ -1421,7 +1566,7 @@ function viewProduct(id){
           <table class="spec-table">
             <tr><td>Material</td><td>${p.material}</td></tr>
             <tr><td>Finish</td><td>${p.color}</td></tr>
-            <tr><td>Room</td><td>${CATEGORY_LABELS[p.group]}</td></tr>
+            <tr><td>Room</td><td>${allCategoryLabels()[p.group]}</td></tr>
             <tr><td>Delivery</td><td>7–10 days, installed</td></tr>
             <tr><td>Warranty</td><td>5 years on the frame</td></tr>
           </table>
@@ -1627,6 +1772,492 @@ function notFound(){
     <a href="#/search" class="btn btn-primary">Search</a></div></div></section>`;
 }
 
+/* ---------------- Admin: login ---------------- */
+function viewAdminLogin(){
+  const firstTime = !AdminStore.hasPin();
+  return `
+  <section class="page-head">
+    <div class="container">
+      <p class="breadcrumb"><a href="#/">Home</a> / Admin</p>
+      <h1 class="page-title">Admin login</h1>
+      <p class="page-desc">${firstTime ? "Set a PIN to protect the admin panel." : "Enter your PIN to manage products and categories."}</p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container" style="max-width:380px;">
+      <div class="form-card">
+        <form id="adminLoginForm">
+          <div class="field">
+            <label for="adminPin">${firstTime ? "Create a PIN" : "PIN"}</label>
+            <input id="adminPin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" autocomplete="off" required autofocus>
+          </div>
+          ${firstTime ? `<div class="field"><label for="adminPinConfirm">Confirm PIN</label><input id="adminPinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" autocomplete="off" required></div>` : ""}
+          <p id="adminLoginError" style="color:#B3261E;font-size:13px;display:none;margin-bottom:10px;">Incorrect PIN.</p>
+          <button class="btn btn-primary btn-block" type="submit">${firstTime ? "Set PIN and enter" : "Log in"}</button>
+        </form>
+      </div>
+    </div>
+  </section>`;
+}
+function afterAdminLogin(){
+  const form = document.getElementById("adminLoginForm");
+  const firstTime = !AdminStore.hasPin();
+  form.addEventListener("submit", e=>{
+    e.preventDefault();
+    const pin = document.getElementById("adminPin").value.trim();
+    if(firstTime){
+      const confirmPin = document.getElementById("adminPinConfirm").value.trim();
+      if(pin.length < 4){ showToast("PIN must be at least 4 digits"); return; }
+      if(pin !== confirmPin){ showToast("PINs do not match"); return; }
+      AdminStore.setPin(pin);
+      AdminStore.login();
+      location.hash = "#/admin/panel";
+      return;
+    }
+    if(AdminStore.checkPin(pin)){
+      AdminStore.login();
+      location.hash = "#/admin/panel";
+    } else {
+      document.getElementById("adminLoginError").style.display = "block";
+      form.reset();
+      document.getElementById("adminPin").focus();
+    }
+  });
+}
+
+/* ---------------- Admin: panel ---------------- */
+function adminTabBar(active){
+  const tabs = [
+    {key:"dashboard", label:"Dashboard"},
+    {key:"products", label:"Products"},
+    {key:"categories", label:"Categories"},
+    {key:"homepage", label:"Homepage"}
+  ];
+  return `<div class="admin-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;">
+    ${tabs.map(t=>`<a href="#/admin/panel?tab=${t.key}" class="btn btn-sm ${active===t.key?'btn-primary':'btn-ghost'}">${t.label}</a>`).join("")}
+  </div>`;
+}
+
+function viewAdminPanel(params){
+  const products = allProducts();
+  const cats = allCategoryLabels();
+  const tab = params.tab || "dashboard";
+  const editId = params.edit || "";
+  const editing = editId ? products.find(p=>p.id===editId) : null;
+
+  const catOptions = Object.keys(cats).map(g=>`<option value="${g}" ${editing && editing.group===g ? "selected":""}>${cats[g]}</option>`).join("");
+
+  const head = `
+  <section class="page-head">
+    <div class="container" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+      <div>
+        <p class="breadcrumb"><a href="#/">Home</a> / Admin panel</p>
+        <h1 class="page-title">Admin panel</h1>
+        <p class="page-desc">Manage products, categories and homepage content. Changes apply immediately across the site.</p>
+        ${adminTabBar(tab)}
+      </div>
+      <button class="btn btn-secondary btn-sm" id="adminLogoutBtn">Log out</button>
+    </div>
+  </section>`;
+
+  if(tab === "dashboard") return head + viewAdminDashboard(products, cats);
+  if(tab === "homepage") return head + viewAdminHomepage();
+  if(tab === "categories") return head + viewAdminCategories(cats, products);
+  return head + viewAdminProducts(products, cats, editing, catOptions);
+}
+
+function viewAdminDashboard(products, cats){
+  const featured = products.filter(p=>p.featured).length;
+  return `
+  <section class="section">
+    <div class="container">
+      <div class="dash-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
+        ${[
+          ["Total products", products.length],
+          ["Categories", Object.keys(cats).length],
+          ["Featured products", featured],
+        ].map(([label,val])=>`
+          <div class="form-card" style="padding:18px;">
+            <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;">${label}</div>
+            <div style="font-family:var(--serif);font-size:30px;margin-top:6px;">${val}</div>
+          </div>`).join("")}
+      </div>
+      <h2 style="font-size:18px;margin-bottom:12px;">Quick actions</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="#/admin/panel?tab=products" class="btn btn-primary btn-sm">Add product</a>
+        <a href="#/admin/panel?tab=categories" class="btn btn-secondary btn-sm">Add category</a>
+        <a href="#/admin/panel?tab=homepage" class="btn btn-secondary btn-sm">Edit homepage</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function viewAdminCategories(cats, products){
+  return `
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size:20px;margin-bottom:14px;">Categories</h2>
+      <div class="form-card" style="max-width:520px;margin-bottom:18px;">
+        <form id="adminCategoryForm">
+          <div class="field"><label for="cfGroup">Group key (e.g. "outdoor", no spaces)</label><input id="cfGroup" required pattern="[a-z0-9\\-]+" placeholder="e.g. patio"></div>
+          <div class="field"><label for="cfLabel">Display label</label><input id="cfLabel" required placeholder="e.g. Patio &amp; Garden"></div>
+          <button class="btn btn-secondary" type="submit">Add / update category</button>
+        </form>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Group key</th><th>Label</th><th>Products</th><th></th></tr></thead>
+          <tbody>
+            ${Object.keys(cats).map(g=>`
+              <tr>
+                <td>${g}</td>
+                <td>${escapeHtml(cats[g])}</td>
+                <td>${products.filter(p=>p.group===g).length}</td>
+                <td><button class="btn btn-sm btn-ghost" data-del-cat="${g}">Remove</button></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>`;
+}
+
+function viewAdminProducts(products, cats, editing, catOptions){
+  return `
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size:20px;margin-bottom:14px;">${editing ? "Edit product" : "Add a product"}</h2>
+      <div class="form-card" style="max-width:640px;">
+        <form id="adminProductForm">
+          <input type="hidden" id="pfId" value="${editing ? editing.id : ""}">
+          <div class="field"><label for="pfName">Name</label><input id="pfName" required value="${editing ? escapeHtml(editing.name) : ""}"></div>
+          <div class="field"><label for="pfCategory">Category label (e.g. "Office Chair")</label><input id="pfCategory" required value="${editing ? escapeHtml(editing.category) : ""}"></div>
+          <div class="field"><label for="pfGroup">Room / group</label>
+            <select id="pfGroup" required>${catOptions}</select>
+          </div>
+          <div class="field"><label for="pfPrice">Price (₹)</label><input id="pfPrice" type="number" min="0" step="1" required value="${editing ? editing.price : ""}"></div>
+          <div class="field"><label for="pfMaterial">Material</label><input id="pfMaterial" value="${editing ? escapeHtml(editing.material||"") : ""}"></div>
+          <div class="field"><label for="pfColor">Color</label><input id="pfColor" value="${editing ? escapeHtml(editing.color||"") : ""}"></div>
+          <div class="field"><label for="pfRating">Rating (0–5)</label><input id="pfRating" type="number" min="0" max="5" step="0.1" value="${editing ? editing.rating : "4.5"}"></div>
+          <div class="field"><label for="pfDesc">Description</label><textarea id="pfDesc">${editing ? escapeHtml(editing.desc||"") : ""}</textarea></div>
+          <div class="field"><label for="pfImg">Image</label>
+            <input id="pfImgFile" type="file" accept="image/*">
+            <input type="hidden" id="pfImg" value="${editing ? editing.img : ""}">
+            <div id="pfImgPreview" style="margin-top:8px;max-width:160px;">${editing && editing.img ? `<img src="${editing.img}" style="width:100%;border-radius:4px;border:1px solid var(--line);">` : ""}</div>
+          </div>
+          <div class="field"><label><input type="checkbox" id="pfFeatured" ${editing && editing.featured ? "checked":""}> Featured product</label></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" type="submit">${editing ? "Save changes" : "Add product"}</button>
+            ${editing ? `<a href="#/admin/panel?tab=products" class="btn btn-ghost">Cancel</a>` : ""}
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size:20px;margin-bottom:14px;">All products (${products.length})</h2>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Group</th><th>Price</th><th>Featured</th><th></th></tr></thead>
+          <tbody>
+            ${products.map(p=>`
+              <tr>
+                <td><img src="${p.img}" style="width:36px;height:36px;object-fit:cover;border-radius:4px;" onerror="this.src='${FALLBACK_IMG}'"></td>
+                <td>${escapeHtml(p.name)}</td>
+                <td>${escapeHtml(p.category)}</td>
+                <td>${cats[p.group] || p.group}</td>
+                <td>${formatINR(p.price)}</td>
+                <td>${p.featured ? "★" : ""}</td>
+                <td style="white-space:nowrap;">
+                  <a href="#/admin/panel?tab=products&edit=${p.id}" class="btn btn-sm btn-ghost">Edit</a>
+                  <button class="btn btn-sm btn-ghost" data-del-prod="${p.id}">Delete</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ---------------- Admin: homepage editor ---------------- */
+function viewAdminHomepage(){
+  const H = homeContent();
+  const field = (label, id, val, type)=>`<div class="field"><label for="${id}">${label}</label><input id="${id}" ${type?`type="${type}"`:""} value="${escapeHtml(String(val==null?"":val))}"></div>`;
+  const imgField = (label, id, val)=>`<div class="field"><label>${label}</label>
+    <input id="${id}File" type="file" accept="image/*">
+    <input type="hidden" id="${id}" value="${escapeHtml(val||"")}">
+    <div id="${id}Preview" style="margin-top:8px;max-width:200px;">${val ? `<img src="${val}" style="width:100%;border-radius:4px;border:1px solid var(--line);">` : ""}</div>
+  </div>`;
+  const visField = (label, id, checked)=>`<label style="display:flex;align-items:center;gap:6px;margin-bottom:14px;font-size:13px;"><input type="checkbox" id="${id}" ${checked?"checked":""}> ${label}</label>`;
+
+  return `
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size:20px;margin-bottom:4px;">Hero</h2>
+      <p class="section-sub" style="margin-bottom:14px;">The first thing visitors see.</p>
+      <div class="form-card" style="max-width:640px;margin-bottom:26px;">
+        <form id="heroForm">
+          ${visField("Show hero section", "heroVisible", H.hero.visible)}
+          ${field("Kicker", "heroKicker", H.hero.kicker)}
+          ${field("Heading", "heroHeading", H.hero.heading)}
+          ${field("Description", "heroLead", H.hero.lead)}
+          ${field("Primary button text", "heroBtn1Text", H.hero.btn1Text)}
+          ${field("Primary button link", "heroBtn1Link", H.hero.btn1Link)}
+          ${field("Secondary button text", "heroBtn2Text", H.hero.btn2Text)}
+          ${field("Secondary button link", "heroBtn2Link", H.hero.btn2Link)}
+          ${field("Stat 1 number", "heroMark1Num", H.hero.mark1Num)}${field("Stat 1 label", "heroMark1Label", H.hero.mark1Label)}
+          ${field("Stat 2 number", "heroMark2Num", H.hero.mark2Num)}${field("Stat 2 label", "heroMark2Label", H.hero.mark2Label)}
+          ${field("Stat 3 number", "heroMark3Num", H.hero.mark3Num)}${field("Stat 3 label", "heroMark3Label", H.hero.mark3Label)}
+          ${imgField("Hero image", "heroImg", H.hero.img)}
+          ${field("Image alt text", "heroAlt", H.hero.alt)}
+          <button class="btn btn-primary" type="submit">Save hero</button>
+        </form>
+      </div>
+
+      <h2 style="font-size:20px;margin-bottom:4px;">Featured product rows</h2>
+      <p class="section-sub" style="margin-bottom:14px;">The two room previews under Collections.</p>
+      <div class="form-card" style="max-width:640px;margin-bottom:26px;">
+        <form id="featuredForm">
+          ${visField("Show row 1", "f1Visible", H.featured1.visible)}
+          ${field("Row 1 title", "f1Title", H.featured1.title)}
+          ${field("Row 1 subtitle", "f1Sub", H.featured1.sub)}
+          ${field("Row 1 category group key", "f1Group", H.featured1.group)}
+          <hr style="margin:18px 0;border:none;border-top:1px solid var(--line);">
+          ${visField("Show row 2", "f2Visible", H.featured2.visible)}
+          ${field("Row 2 title", "f2Title", H.featured2.title)}
+          ${field("Row 2 subtitle", "f2Sub", H.featured2.sub)}
+          ${field("Row 2 category group key", "f2Group", H.featured2.group)}
+          <button class="btn btn-primary" type="submit">Save featured rows</button>
+        </form>
+      </div>
+
+      <h2 style="font-size:20px;margin-bottom:4px;">About / brand story</h2>
+      <div class="form-card" style="max-width:640px;margin-bottom:26px;">
+        <form id="aboutForm">
+          ${visField("Show about section", "aboutVisible", H.about.visible)}
+          ${field("Heading", "aboutHeading", H.about.heading)}
+          ${field("Body text", "aboutBody", H.about.body)}
+          ${field("Stat 1 number", "aboutStat1Num", H.about.stat1Num)}${field("Stat 1 label", "aboutStat1Label", H.about.stat1Label)}
+          ${field("Stat 2 number", "aboutStat2Num", H.about.stat2Num)}${field("Stat 2 label", "aboutStat2Label", H.about.stat2Label)}
+          ${field("Stat 3 number", "aboutStat3Num", H.about.stat3Num)}${field("Stat 3 label", "aboutStat3Label", H.about.stat3Label)}
+          ${imgField("About image", "aboutImg", H.about.img)}
+          <button class="btn btn-primary" type="submit">Save about section</button>
+        </form>
+      </div>
+
+      <h2 style="font-size:20px;margin-bottom:4px;">Promotional banner</h2>
+      <div class="form-card" style="max-width:640px;margin-bottom:26px;">
+        <form id="promoForm">
+          ${visField("Show promo banner", "promoVisible", H.promo.visible)}
+          ${field("Heading", "promoHeading", H.promo.heading)}
+          ${field("Body text", "promoBody", H.promo.body)}
+          ${field("Button text", "promoBtnText", H.promo.btnText)}
+          ${field("Button link", "promoBtnLink", H.promo.btnLink)}
+          ${imgField("Banner image", "promoImg", H.promo.img)}
+          <button class="btn btn-primary" type="submit">Save promo banner</button>
+        </form>
+      </div>
+
+      <h2 style="font-size:20px;margin-bottom:4px;">Collections grid</h2>
+      <p class="section-sub" style="margin-bottom:14px;">The 6 cards below Shop by room.</p>
+      <div class="form-card" style="max-width:640px;">
+        <form id="collectionsForm">
+          ${H.collections.map((c,i)=>`
+            <div style="border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:14px;">
+              <strong style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;">Card ${i+1}</strong>
+              ${field("Label", "colLabel"+i, c.label)}
+              ${field("Title", "colTitle"+i, c.title)}
+              ${field("Link", "colHref"+i, c.href)}
+            </div>`).join("")}
+          <button class="btn btn-primary" type="submit">Save collections</button>
+        </form>
+      </div>
+    </div>
+  </section>`;
+}
+/* Wires an <input type=file> to read the chosen image as a data URL into a hidden
+   input (id) and update its preview <div id+"Preview">. Keeps everything client-side. */
+function wireImageInput(fileId, hiddenId, previewId){
+  const fileEl = document.getElementById(fileId);
+  if(!fileEl) return;
+  fileEl.addEventListener("change", ()=>{
+    const file = fileEl.files && fileEl.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      document.getElementById(hiddenId).value = reader.result;
+      const prev = document.getElementById(previewId);
+      if(prev) prev.innerHTML = `<img src="${reader.result}" style="width:100%;border-radius:4px;border:1px solid var(--line);">`;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function afterAdminPanel(){
+  document.getElementById("adminLogoutBtn").addEventListener("click", ()=>{
+    AdminStore.logout();
+    location.hash = "#/admin";
+  });
+
+  const productForm = document.getElementById("adminProductForm");
+  if(productForm){
+    wireImageInput("pfImgFile", "pfImg", "pfImgPreview");
+    productForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const id = document.getElementById("pfId").value || AdminStore.nextId();
+      const group = document.getElementById("pfGroup").value;
+      const existingImg = document.getElementById("pfImg").value;
+      const p = {
+        id,
+        name: document.getElementById("pfName").value.trim(),
+        category: document.getElementById("pfCategory").value.trim(),
+        group,
+        price: Number(document.getElementById("pfPrice").value) || 0,
+        img: existingImg || (findProduct(id) && findProduct(id).img) || Object.values(IMG)[0],
+        rating: Number(document.getElementById("pfRating").value) || 4.5,
+        material: document.getElementById("pfMaterial").value.trim(),
+        color: document.getElementById("pfColor").value.trim(),
+        desc: document.getElementById("pfDesc").value.trim(),
+        featured: document.getElementById("pfFeatured").checked
+      };
+      AdminStore.upsertProduct(p);
+      showToast(document.getElementById("pfId").value ? "Product updated" : "Product added");
+      location.hash = "#/admin/panel?tab=products";
+      if(location.hash === "#/admin/panel?tab=products") render();
+    });
+  }
+
+  document.querySelectorAll("[data-del-prod]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.getAttribute("data-del-prod");
+      if(confirm("Delete this product? It will be removed from the catalogue.")){
+        AdminStore.deleteProduct(id);
+        showToast("Product deleted");
+        render();
+      }
+    });
+  });
+
+  const catForm = document.getElementById("adminCategoryForm");
+  if(catForm){
+    catForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const group = document.getElementById("cfGroup").value.trim().toLowerCase();
+      const label = document.getElementById("cfLabel").value.trim();
+      if(!group || !label) return;
+      AdminStore.upsertCategory(group, label);
+      showToast("Category saved");
+      render();
+    });
+  }
+
+  document.querySelectorAll("[data-del-cat]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const g = btn.getAttribute("data-del-cat");
+      const inUse = allProducts().some(p=>p.group===g);
+      if(inUse){ showToast("Can't remove — products still use this category"); return; }
+      if(confirm("Remove this category?")){
+        AdminStore.deleteCategory(g);
+        showToast("Category removed");
+        render();
+      }
+    });
+  });
+
+  /* ---- Homepage editor forms (only present on the Homepage tab) ---- */
+  wireImageInput("heroImgFile", "heroImg", "heroImgPreview");
+  wireImageInput("aboutImgFile", "aboutImg", "aboutImgPreview");
+  wireImageInput("promoImgFile", "promoImg", "promoImgPreview");
+
+  const heroForm = document.getElementById("heroForm");
+  if(heroForm){
+    heroForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const v = id=>document.getElementById(id).value;
+      AdminStore.saveHome({ hero: {
+        visible: document.getElementById("heroVisible").checked,
+        kicker: v("heroKicker"), heading: v("heroHeading"), lead: v("heroLead"),
+        btn1Text: v("heroBtn1Text"), btn1Link: v("heroBtn1Link"),
+        btn2Text: v("heroBtn2Text"), btn2Link: v("heroBtn2Link"),
+        mark1Num: v("heroMark1Num"), mark1Label: v("heroMark1Label"),
+        mark2Num: v("heroMark2Num"), mark2Label: v("heroMark2Label"),
+        mark3Num: v("heroMark3Num"), mark3Label: v("heroMark3Label"),
+        img: v("heroImg"), alt: v("heroAlt")
+      }});
+      showToast("Hero saved");
+      render();
+    });
+  }
+
+  const featuredForm = document.getElementById("featuredForm");
+  if(featuredForm){
+    featuredForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const v = id=>document.getElementById(id).value;
+      AdminStore.saveHome({
+        featured1: { visible: document.getElementById("f1Visible").checked, title: v("f1Title"), sub: v("f1Sub"), group: v("f1Group").trim() },
+        featured2: { visible: document.getElementById("f2Visible").checked, title: v("f2Title"), sub: v("f2Sub"), group: v("f2Group").trim() }
+      });
+      showToast("Featured rows saved");
+      render();
+    });
+  }
+
+  const aboutForm = document.getElementById("aboutForm");
+  if(aboutForm){
+    aboutForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const v = id=>document.getElementById(id).value;
+      AdminStore.saveHome({ about: {
+        visible: document.getElementById("aboutVisible").checked,
+        heading: v("aboutHeading"), body: v("aboutBody"),
+        stat1Num: v("aboutStat1Num"), stat1Label: v("aboutStat1Label"),
+        stat2Num: v("aboutStat2Num"), stat2Label: v("aboutStat2Label"),
+        stat3Num: v("aboutStat3Num"), stat3Label: v("aboutStat3Label"),
+        img: v("aboutImg"), alt: (homeContent().about.alt)
+      }});
+      showToast("About section saved");
+      render();
+    });
+  }
+
+  const promoForm = document.getElementById("promoForm");
+  if(promoForm){
+    promoForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const v = id=>document.getElementById(id).value;
+      AdminStore.saveHome({ promo: {
+        visible: document.getElementById("promoVisible").checked,
+        heading: v("promoHeading"), body: v("promoBody"),
+        btnText: v("promoBtnText"), btnLink: v("promoBtnLink"),
+        img: v("promoImg"), alt: (homeContent().promo.alt)
+      }});
+      showToast("Promo banner saved");
+      render();
+    });
+  }
+
+  const collectionsForm = document.getElementById("collectionsForm");
+  if(collectionsForm){
+    collectionsForm.addEventListener("submit", e=>{
+      e.preventDefault();
+      const cur = homeContent().collections;
+      const updated = cur.map((c,i)=>({
+        ...c,
+        label: document.getElementById("colLabel"+i).value,
+        title: document.getElementById("colTitle"+i).value,
+        href: document.getElementById("colHref"+i).value
+      }));
+      AdminStore.saveHome({ collections: updated });
+      showToast("Collections saved");
+      render();
+    });
+  }
+}
+
 
 /* ---------------- Motion helpers ---------------- */
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1688,6 +2319,10 @@ function render(){
     case "wishlist": html = viewWishlist(); break;
     case "about": html = viewAbout(); break;
     case "contact": html = viewContact(); after = afterContact; break;
+    case "admin":
+      if(id === "panel" && AdminStore.isLoggedIn()){ html = viewAdminPanel(params); after = afterAdminPanel; }
+      else { html = viewAdminLogin(); after = afterAdminLogin; }
+      break;
     default: html = notFound();
   }
 
