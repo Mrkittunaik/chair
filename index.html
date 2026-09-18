@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PRABOT. — Furniture for modern homes and workspaces</title>
 <meta name="description" content="Premium sofas, office furniture, beds, dining and gaming setups. Built for everyday comfort and lasting quality.">
 <link rel="icon" href="data:,">
@@ -19,8 +19,8 @@
   --line:#D8D4C8;
   --brass:#9A742C;
   --sage:#5E7263;
-  --radius:3px;
-  --radius-lg:10px;
+  --radius:2px;
+  --radius-lg:2px;
   --max-w:1240px;
   --header-h:76px;
   --shadow:0 10px 30px rgba(22,36,30,.08);
@@ -28,7 +28,8 @@
   --sans:'Karla',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box;}
-html{scroll-behavior:smooth;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none;}
 body{
   margin:0;background:var(--stone);color:var(--ink);
   font-family:var(--sans);font-size:15px;line-height:1.6;
@@ -44,16 +45,18 @@ h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:-.015em;line-he
 :focus-visible{outline:2px solid var(--sage);outline-offset:2px;}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 
-.container{max-width:var(--max-w);margin:0 auto;padding:0 24px;}
-.section{padding:64px 0;}
+.container{width:100%;max-width:var(--max-w);margin:0 auto;
+  padding-left:max(24px,env(safe-area-inset-left));
+  padding-right:max(24px,env(safe-area-inset-right));}
+.section{padding:44px 0;}
 .section-tight{padding-top:0;}
-.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:20px;}
 .section-head h2{font-size:30px;}
 .section-sub{color:var(--ink-soft);font-size:14px;margin-top:6px;max-width:58ch;}
 .view-all{font-size:13px;font-weight:600;border-bottom:1px solid var(--ink);padding-bottom:2px;white-space:nowrap;}
-.page-head{background:var(--paper);border-bottom:1px solid var(--line);padding:46px 0 38px;}
-.page-title{font-size:38px;}
-.page-desc{color:var(--ink-soft);margin-top:10px;max-width:62ch;}
+.page-head{background:var(--paper);border-bottom:1px solid var(--line);padding:26px 0 22px;}
+.page-title{font-size:30px;margin-top:6px!important;}
+.page-desc{color:var(--ink-soft);font-size:14px;margin-top:6px;max-width:62ch;}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;
@@ -177,10 +180,9 @@ body{padding-top:var(--header-h);}
 .chip:hover{border-color:var(--ink);}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink);}
 .result-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
-.filters-toggle{display:none;}
-.filters-head{display:none;}
-.filters-actions{display:none;}
-.filters-backdrop{display:none;}
+.filter-bar{display:none;}
+.filter-drop{display:none;}
+.filter-bar-backdrop{display:none;}
 .result-count{font-size:13.5px;color:var(--ink-soft);}
 .empty-state{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);padding:56px 28px;text-align:center;}
 .empty-state h3{font-size:22px;}
@@ -400,9 +402,14 @@ img.lazy-img.loaded{opacity:1;}
   .promo .promo-in{padding:0 22px;background:linear-gradient(to right,rgba(12,22,17,.88),rgba(12,22,17,.55));}
   .promo img{height:280px;}
   .promo h2{font-size:26px;}
-  .section{padding:48px 0;}
+  .section{padding:34px 0;}
+  .page-head{padding:20px 0 18px;}
+  .page-title{font-size:26px;}
   .section-head{flex-direction:column;align-items:flex-start;gap:8px;}
   .about-grid{gap:26px;}
+  .about-img{border-radius:2px;}
+  .about-img img{aspect-ratio:16/10;}
+  .stat-row{justify-content:center;text-align:center;}
   .pdp-media{order:-1;}
   .pdp h1{font-size:26px;}
   .contact-grid{gap:26px;}
@@ -427,10 +434,10 @@ img.lazy-img.loaded{opacity:1;}
   .collection-card .ctitle{font-size:16px;}
   .footer-grid{grid-template-columns:1fr;gap:28px;padding:44px 16px 32px;}
   .footer-base{padding:16px;flex-direction:column;gap:6px;text-align:center;}
-  .section{padding:38px 0;}
-  .page-head{padding:32px 0 26px;}
-  .page-title{font-size:26px;}
-  .page-desc{font-size:13.5px;}
+  .section{padding:28px 0;}
+  .page-head{padding:16px 0 14px;}
+  .page-title{font-size:23px;}
+  .page-desc{font-size:13px;margin-top:5px;}
   .section-head h2{font-size:21px;}
   .hero-marks{gap:16px 22px;}
   .hero-marks strong{font-size:17px;}
@@ -442,8 +449,12 @@ img.lazy-img.loaded{opacity:1;}
   .pdp-actions .qty{justify-content:center;}
   .pdp .price{font-size:24px;}
   .value-card{padding:20px;}
-  .stat-row{gap:22px;}
+  .stat-row{gap:20px 26px;justify-content:center;text-align:center;}
   .stat .num{font-size:22px;}
+  .about-img{border-radius:2px;}
+  .about-img img{aspect-ratio:3/2;}
+  .promo{border-radius:2px;}
+  .promo img{height:220px;}
   .form-card{padding:20px;}
   .search-form{flex-direction:column;}
   .search-form .btn{width:100%;}
@@ -455,6 +466,102 @@ img.lazy-img.loaded{opacity:1;}
   .cat-rail .cat-card{flex:0 0 68px;}
   .grid-collections .collection-card{flex:0 0 82%;}
 }
+
+/* ---- Tighter vertical rhythm ---- */
+.page-head .breadcrumb{font-size:12px;}
+.page-head + .section{padding-top:26px;}
+.result-bar{margin-bottom:16px;}
+.pdp{gap:38px;}
+.hero-grid{padding:52px 24px 56px;}
+@media (max-width:900px){
+  .page-head + .section{padding-top:18px;}
+  .hero-grid{padding-top:26px;padding-bottom:30px;}
+  .result-bar{margin-bottom:12px;}
+  .section-head{margin-bottom:14px;}
+}
+@media (max-width:640px){
+  .page-head + .section{padding-top:14px;}
+  .page-head .breadcrumb{font-size:11.5px;}
+  .section-head h2{font-size:20px;}
+}
+
+/* ================= Mobile fit fixes ================= */
+
+/* 1. Header offset is measured at runtime (--header-total) so the mobile
+      search bar can never overlap content. Values below are fallbacks. */
+:root{--header-total:var(--header-h);}
+body{padding-top:var(--header-total);}
+
+/* 2. iOS Safari zooms the whole page whenever a focused field is under 16px.
+      This is the single biggest cause of the "zoomed in" feel on phones. */
+@media (max-width:900px){
+  body{padding-top:var(--header-total);}
+  input,select,textarea,
+  .field input,.field textarea,.field select,
+  .header-search input,.mobile-search input,
+  .search-form input,.range-row input,
+  .filter-drop .range-row input{font-size:16px;}
+  .search-form input{padding:13px 14px;}
+  .header-search input,.mobile-search input{padding:10px 14px 10px 38px;}
+  select{font-size:16px;}
+
+  /* nav sheet + backdrop sit under the FULL header, not just its first row */
+  .main-nav.open{top:var(--header-total);
+    max-height:calc(100dvh - var(--header-total));}
+  .nav-backdrop{top:var(--header-total);height:100dvh;}
+  .filter-bar-backdrop{top:var(--header-total);}
+
+  /* sticky offsets follow the real header too */
+  .filters,.summary{top:calc(var(--header-total) + 18px);}
+
+  /* dropdown panels stay inside the screen, vertically as well */
+  .filter-drop{max-width:calc(100vw - 24px);
+    max-height:60dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .filter-drop label{white-space:normal;}
+  .filter-drop .range-row input{width:100%;min-width:0;}
+
+  /* horizontal rails: hide the scrollbar, let them bleed to the edge cleanly */
+  .cat-rail,.grid-collections,.filter-bar{scrollbar-width:none;}
+  .cat-rail::-webkit-scrollbar,
+  .grid-collections::-webkit-scrollbar,
+  .filter-bar::-webkit-scrollbar{display:none;}
+
+  /* nothing wide enough to push the page sideways */
+  .spec-table,.cart-row,.summary,.form-card,.product-card{max-width:100%;}
+  .pc-name,.cart-row .nm,.page-title,.hero h1,.promo h2,h1,h2,h3{
+    overflow-wrap:anywhere;word-break:break-word;}
+  .breadcrumb{overflow-wrap:anywhere;}
+  img,video,table{max-width:100%;}
+
+  /* comfortable tap targets */
+  .icon-btn,.qty button{min-width:44px;min-height:44px;}
+  .btn{min-height:44px;}
+  .link-btn,.view-all{padding:4px 0;}
+
+  .toast{max-width:calc(100vw - 32px);text-align:center;
+    bottom:calc(20px + env(safe-area-inset-bottom));}
+}
+
+/* 3. Respect the notch / home indicator */
+.site-footer{padding-bottom:env(safe-area-inset-bottom);}
+.hero-grid,.footer-grid{
+  padding-left:max(24px,env(safe-area-inset-left));
+  padding-right:max(24px,env(safe-area-inset-right));}
+@media (max-width:900px){
+  .hero-grid{padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));}
+  .container{padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));}
+  .mobile-search{padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));}
+}
+@media (max-width:640px){
+  .footer-grid{padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));}
+}
+
+/* 4. Body scroll lock that doesn't jump the page on iOS */
+body.nav-locked{position:relative;overflow:hidden;touch-action:none;}
 </style>
 </head>
 <body>
@@ -858,7 +965,7 @@ function viewSearch(params){
   <section class="search-hero">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / Search</p>
-      <h1 class="page-title" style="margin-top:10px;">Search the catalogue</h1>
+      <h1 class="page-title">Search the catalogue</h1>
       <form class="search-form" id="pageSearchForm" role="search">
         <input type="search" id="pageSearchInput" value="${escapeHtml(q)}" placeholder="Try “leather chair”, “oak dining table”, “RGB desk”" aria-label="Search furniture" autocomplete="off">
         <button class="btn btn-primary" type="submit">Search</button>
@@ -1107,7 +1214,7 @@ function viewShop(params){
   <section class="page-head">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / Shop</p>
-      <h1 class="page-title" id="shopTitle" style="margin-top:10px;">${title}</h1>
+      <h1 class="page-title" id="shopTitle">${title}</h1>
       <p class="page-desc" id="shopDesc">Filter by room, price and material. ${PRODUCTS.length} pieces in the catalogue.</p>
     </div>
   </section>
@@ -1238,10 +1345,19 @@ function afterShop(params){
     const drop = item.querySelector(".filter-drop");
     const r = btn.getBoundingClientRect();
     const vw = window.innerWidth;
+    const vh = window.innerHeight;
     let left = r.left;
     const maxLeft = vw - drop.offsetWidth - 12;
     if(left > maxLeft) left = Math.max(12, maxLeft);
-    drop.style.top = (r.bottom + 8) + "px";
+
+    // flip above the button if there isn't room below
+    let top = r.bottom + 8;
+    const h = drop.offsetHeight;
+    if(top + h > vh - 12){
+      const above = r.top - 8 - h;
+      top = above >= 12 ? above : Math.max(12, vh - h - 12);
+    }
+    drop.style.top = top + "px";
     drop.style.left = left + "px";
   }
   function closeAllDrops(){
@@ -1336,7 +1452,7 @@ function viewCart(){
   <section class="page-head">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / Cart</p>
-      <h1 class="page-title" style="margin-top:10px;">Your cart</h1>
+      <h1 class="page-title">Your cart</h1>
     </div>
   </section>
   <section class="section"><div class="container" id="cartArea"></div></section>`;
@@ -1401,7 +1517,7 @@ function viewWishlist(){
   <section class="page-head">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / Wishlist</p>
-      <h1 class="page-title" style="margin-top:10px;">Saved pieces</h1>
+      <h1 class="page-title">Saved pieces</h1>
       <p class="page-desc">${list.length? list.length + " saved. They stay here on this device." : "Nothing saved yet."}</p>
     </div>
   </section>
@@ -1418,7 +1534,7 @@ function viewAbout(){
   <section class="page-head">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / About</p>
-      <h1 class="page-title" style="margin-top:10px;">About Prabot</h1>
+      <h1 class="page-title">About Prabot</h1>
       <p class="page-desc">A furniture workshop in Hyderabad making pieces for homes and offices since 2016.</p>
     </div>
   </section>
@@ -1467,7 +1583,7 @@ function viewContact(){
   <section class="page-head">
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / Contact</p>
-      <h1 class="page-title" style="margin-top:10px;">Get in touch</h1>
+      <h1 class="page-title">Get in touch</h1>
       <p class="page-desc">Questions about an order, a custom piece, or a trade account — send a note and we reply within a working day.</p>
     </div>
   </section>
@@ -1581,11 +1697,31 @@ function render(){
   renderFooter();
   groupStagger();
   setupReveals();
+  syncHeaderHeight();
   window.scrollTo(0,0);
 }
 
+/* ---- Keep --header-total in sync with the real rendered header ----
+   The mobile layout stacks a search bar under the header row, and its
+   height changes with font-size / wrapping. Measuring beats hardcoding. */
+function syncHeaderHeight(){
+  const h = document.querySelector(".site-header");
+  if(!h) return;
+  const px = Math.round(h.getBoundingClientRect().height);
+  if(px > 0) document.documentElement.style.setProperty("--header-total", px + "px");
+}
+if(window.ResizeObserver){
+  const ro = new ResizeObserver(syncHeaderHeight);
+  const hr = document.getElementById("headerRoot");
+  if(hr) ro.observe(hr);
+}
+window.addEventListener("resize", syncHeaderHeight);
+window.addEventListener("orientationchange", ()=>setTimeout(syncHeaderHeight,150));
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderHeight);
+
 window.addEventListener("hashchange", render);
 render();
+syncHeaderHeight();
 </script>
 </body>
 </html>
