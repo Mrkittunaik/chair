@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PRABOT. — Furniture for modern homes and workspaces</title>
+<meta name="description" content="Premium sofas, office furniture, beds, dining and gaming setups. Built for everyday comfort and lasting quality.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="headerRoot"></div>
+<main id="app"></main>
+<div id="footerRoot"></div>
+<div class="toast" id="toast"></div>
+
+<!-- Data layer -->
+<script src="js/data/products.js"></script>
+
+<!-- Shared UI (icons, nav, header/footer, toast, product cards) -->
+<script src="js/ui/icons-nav.js"></script>
+<script src="js/ui/layout.js"></script>
+
+<!-- Page views (rendered into #app by the router) -->
+<script src="js/views/search.js"></script>
+<script src="js/views/home.js"></script>
+<script src="js/views/shop.js"></script>
+<script src="js/views/product.js"></script>
+<script src="js/views/cart-checkout.js"></script>
+<script src="js/views/misc.js"></script>
+<script src="js/views/admin/admin.js"></script>
+
+<!-- Router + app bootstrap (must load last) -->
+<script src="js/core/app.js"></script>
+</body>
+</html>
