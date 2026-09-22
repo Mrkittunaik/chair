@@ -104,8 +104,10 @@ function viewHome(){
       <div class="cat-rail">
         ${categories.filter(c=>cats[c.key]).map(c=>`
           <a href="#/shop?cat=${c.key}" class="cat-card">
-            <div class="cat-img img-wrap shimmer"><img src="${c.img}" ${fb(c.key)} alt="${c.label}" loading="lazy"></div>
-            <div class="cat-name">${cats[c.key]}</div>
+            <div class="cat-img img-wrap shimmer">
+              <img src="${c.img}" ${fb(c.key)} alt="${c.label}" loading="lazy">
+              <div class="cat-name">${cats[c.key]}</div>
+            </div>
           </a>`).join("")}
       </div>
     </div>
