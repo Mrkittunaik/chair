@@ -24,12 +24,12 @@ function defaultHomeContent(){
     catRail: { title: "Shop by room", visible: true },
     collectionsSection: { title: "Collections", sub: "Pieces grouped the way rooms actually come together.", visible: true },
     collections: [
-      {title:"Sofas that hold a room together",label:"Living room",img:IMG.collectionLiving,href:"#/shop?cat=sofas"},
-      {title:"Desks and chairs for long working days",label:"Office",img:IMG.collectionOffice,href:"#/shop?cat=office"},
-      {title:"Beds, wardrobes and quiet corners",label:"Bedroom",img:IMG.collectionBedroom,href:"#/shop?cat=bedroom"},
-      {title:"Tables built for long dinners",label:"Dining",img:IMG.collectionDining,href:"#/shop?cat=dining"},
-      {title:"Weather-ready seating for the outdoors",label:"Outdoor",img:IMG.collectionOutdoor,href:"#/shop?cat=outdoor"},
-      {title:"Setups made for late-night play",label:"Gaming",img:IMG.collectionGaming,href:"#/shop?cat=gaming"}
+      {title:"Executive desks for corner offices",label:"Executive",img:"assets/collections/office-desk.png",href:"#/shop?cat=office"},
+      {title:"Compact desks for home study corners",label:"Study",img:"assets/collections/study-desk.png",href:"#/shop?cat=office"},
+      {title:"Height-adjustable desks for open floors",label:"Open office",img:"assets/collections/open-office-teal.png",href:"#/shop?cat=office"},
+      {title:"Modular benching for growing teams",label:"Team desks",img:"assets/collections/open-office-mint.png",href:"#/shop?cat=office"},
+      {title:"Collaborative workstations with storage",label:"Workstations",img:"assets/collections/collab-desks-green.png",href:"#/shop?cat=office"},
+      {title:"Cluster desks built for busy floors",label:"Clusters",img:"assets/collections/workstation-cluster.png",href:"#/shop?cat=office"}
     ],
     featured1: { group: "office", title: "Office", sub: "Chairs, desks and storage for focused work.", visible: true },
     featured2: { group: "gaming", title: "Gaming", sub: "Desks and seating that survive long sessions.", visible: true },
