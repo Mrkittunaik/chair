@@ -81,16 +81,18 @@ function viewHome(){
   const collections = H.collections;
   return `
   ${H.hero.visible ? `
-  <section class="hero-card">
-    <div class="hero-slideshow">
-      ${HERO_SLIDES.map((src,i)=>`<div class="hero-slide${i===0?" active":""}" style="background-image:url('${src}')"></div>`).join("")}
-      <div class="hero-scrim"></div>
-    </div>
-    <div class="hero-card-content">
-      <h1 class="hero-card-title">${escapeHtml(H.hero.heading)}</h1>
-      <div class="hero-card-actions">
-        <a href="${H.hero.btn1Link}" class="btn-pill btn-pill-ghost">Services</a>
-        <a href="${H.hero.btn2Link}" class="btn-pill btn-pill-solid">Enquiry</a>
+  <section class="hero-card-wrap">
+    <div class="hero-card">
+      <div class="hero-slideshow">
+        ${HERO_SLIDES.map((src,i)=>`<div class="hero-slide${i===0?" active":""}" style="background-image:url('${src}')"></div>`).join("")}
+        <div class="hero-scrim"></div>
+      </div>
+      <div class="hero-card-content">
+        <h1 class="hero-card-title">${escapeHtml(H.hero.heading)}</h1>
+        <div class="hero-card-actions">
+          <a href="${H.hero.btn1Link}" class="btn-pill btn-pill-ghost">Services</a>
+          <a href="${H.hero.btn2Link}" class="btn-pill btn-pill-solid">Enquiry</a>
+        </div>
       </div>
     </div>
   </section>` : ""}
