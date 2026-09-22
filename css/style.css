@@ -110,7 +110,7 @@ body{padding-top:var(--header-h);}
 /* Hero */
 /* Full-bleed hero slideshow card */
 .hero-card-wrap{padding:24px;}
-.hero-card{position:relative;width:100%;height:440px;overflow:hidden;background:#111;border-radius:2px;}
+.hero-card{position:relative;width:100%;height:520px;overflow:hidden;background:#111;border-radius:2px;}
 .hero-slideshow{position:absolute;inset:0;}
 .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.1s ease;}
 .hero-slide.active{opacity:1;}
