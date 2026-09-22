@@ -1,3 +1,12 @@
+const HERO_SLIDES = [
+  "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?auto=format&fit=crop&w=1600&q=80"
+];
+
 function defaultHomeContent(){
   return {
     hero: {
@@ -72,23 +81,17 @@ function viewHome(){
   const collections = H.collections;
   return `
   ${H.hero.visible ? `
-  <section class="hero">
-    <div class="container hero-grid">
-      <div class="hero-copy-anim">
-        <p class="kicker">${escapeHtml(H.hero.kicker)}</p>
-        <h1>${escapeHtml(H.hero.heading)}</h1>
-        <p class="lead">${escapeHtml(H.hero.lead)}</p>
-        <div class="hero-actions">
-          <a href="${H.hero.btn1Link}" class="btn btn-primary">${escapeHtml(H.hero.btn1Text)}</a>
-          <a href="${H.hero.btn2Link}" class="btn btn-secondary">${escapeHtml(H.hero.btn2Text)}</a>
-        </div>
-        <div class="hero-marks">
-          <div><strong>${escapeHtml(H.hero.mark1Num)}</strong>${escapeHtml(H.hero.mark1Label)}</div>
-          <div><strong>${escapeHtml(H.hero.mark2Num)}</strong>${escapeHtml(H.hero.mark2Label)}</div>
-          <div><strong>${escapeHtml(H.hero.mark3Num)}</strong>${escapeHtml(H.hero.mark3Label)}</div>
-        </div>
+  <section class="hero-card">
+    <div class="hero-slideshow">
+      ${HERO_SLIDES.map((src,i)=>`<div class="hero-slide${i===0?" active":""}" style="background-image:url('${src}')"></div>`).join("")}
+      <div class="hero-scrim"></div>
+    </div>
+    <div class="hero-card-content">
+      <h1 class="hero-card-title">${escapeHtml(H.hero.heading)}</h1>
+      <div class="hero-card-actions">
+        <a href="${H.hero.btn1Link}" class="btn-pill btn-pill-ghost">Services</a>
+        <a href="${H.hero.btn2Link}" class="btn-pill btn-pill-solid">Enquiry</a>
       </div>
-      <div class="hero-image img-wrap shimmer"><img src="${H.hero.img}" ${fb("sofas")} alt="${escapeHtml(H.hero.alt)}"></div>
     </div>
   </section>` : ""}
 
@@ -175,6 +178,16 @@ function viewHome(){
   </section>` : ""}`;
 }
 function afterHome(){
+  const slides = document.querySelectorAll(".hero-slide");
+  if(slides.length){
+    let idx = 0;
+    clearInterval(window.__heroSlideTimer);
+    window.__heroSlideTimer = setInterval(()=>{
+      slides[idx].classList.remove("active");
+      idx = (idx+1) % slides.length;
+      slides[idx].classList.add("active");
+    }, 3500);
+  }
   const H = homeContent();
   const p1 = document.getElementById("featuredPreview1");
   const p2 = document.getElementById("featuredPreview2");
