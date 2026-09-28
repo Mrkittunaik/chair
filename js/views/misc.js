@@ -120,5 +120,3 @@ function notFound(){
     <h3>That page does not exist</h3><p>The link may be old or mistyped. Search the catalogue or head back home.</p>
     <a href="#/search" class="btn btn-primary">Search</a></div></div></section>`;
 }
-
-/* ---------------- Admin: login ---------------- */
