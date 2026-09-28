@@ -587,3 +587,54 @@ body{padding-top:var(--header-total);}
 
 /* 4. Body scroll lock that doesn't jump the page on iOS */
 body.nav-locked{position:relative;overflow:hidden;touch-action:none;}
+
+/* ================= WhatsApp ordering ================= */
+:root{--wa:#128C4A;--wa-dark:#0E7139;}
+.btn-wa{background:var(--wa);color:#fff;border-color:var(--wa);}
+.btn-wa:hover{background:var(--wa-dark);border-color:var(--wa-dark);}
+.btn-wa svg{width:18px;height:18px;flex-shrink:0;}
+.btn-sm.btn-wa svg{width:15px;height:15px;}
+
+/* product card: two buttons side by side */
+.pc-actions{display:flex;gap:8px;}
+.pc-actions [data-add]{flex:1;min-width:0;}
+.pc-actions [data-wa]{flex:0 0 auto;}
+
+/* product page */
+.pdp-wa{margin-top:16px;max-width:460px;}
+.pdp-wa-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.pdp-wa-note{font-size:12.5px;color:var(--ink-soft);margin:10px 0 0;}
+
+/* header: WhatsApp button + nav item */
+.wa-head{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:100px;
+  background:var(--wa);color:#fff;font-size:13px;font-weight:700;white-space:nowrap;}
+.wa-head:hover{background:var(--wa-dark);}
+.wa-head svg{width:18px;height:18px;}
+.nav-cta{display:none;}
+.main-nav a.nav-wa-link{color:var(--wa);}
+.main-nav a.nav-wa-link:hover{color:var(--wa-dark);}
+@media (max-width:1180px) and (min-width:901px){
+  .main-nav{gap:16px;}
+  .wa-head span{display:none;}
+  .wa-head{width:40px;padding:0;justify-content:center;}
+}
+
+/* floating button */
+.wa-float{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:80;
+  width:54px;height:54px;border-radius:50%;background:var(--wa);color:#fff;display:grid;place-items:center;
+  box-shadow:0 8px 22px rgba(0,0,0,.28);}
+.wa-float:hover{background:var(--wa-dark);}
+.wa-float svg{width:28px;height:28px;}
+
+@media (max-width:900px){
+  .wa-head{width:40px;padding:0;justify-content:center;}
+  .wa-head span{display:none;}
+  .main-nav.open{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));}
+  .main-nav.open a.nav-wa-link{color:var(--wa);}
+  .main-nav.open .nav-cta{display:flex;margin-top:16px;padding:14px 20px;border-bottom:0;color:#fff;font-size:15px;}
+  .wa-float{width:50px;height:50px;bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+}
+@media (max-width:480px){
+  .pc-actions{flex-direction:column;}
+  .pc-actions [data-wa]{width:100%;}
+}
