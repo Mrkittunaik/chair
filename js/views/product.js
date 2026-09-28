@@ -22,6 +22,14 @@ function viewProduct(id){
             <button class="btn btn-primary" id="pdpAdd">Add to cart</button>
             <button class="btn btn-secondary" data-wish="${p.id}" style="gap:8px;">${wished?"Saved":"Save"}</button>
           </div>
+          <div class="pdp-wa">
+            <button class="btn btn-wa btn-block" data-wa="product" data-pid="${p.id}" id="pdpWa">${WA_ICON}<span id="pdpWaLabel">Order on WhatsApp — ${formatINR(p.price)}</span></button>
+            <div class="pdp-wa-row">
+              <button class="btn btn-secondary" data-wa="bulk" data-pid="${p.id}">Bulk order</button>
+              <button class="btn btn-secondary" data-wa="custom" data-pid="${p.id}">Customise</button>
+            </div>
+            <p class="pdp-wa-note">Opens WhatsApp with the product link, price and quantity filled in.</p>
+          </div>
           <table class="spec-table">
             <tr><td>Material</td><td>${p.material}</td></tr>
             <tr><td>Finish</td><td>${p.color}</td></tr>
@@ -44,9 +52,15 @@ function viewProduct(id){
 function afterProduct(id){
   const p = findProduct(id); if(!p) return;
   let q = 1;
+  window.__pdpQty = 1;
   const val = document.getElementById("qVal");
-  document.getElementById("qMinus").addEventListener("click", ()=>{ q = Math.max(1,q-1); val.textContent=q; });
-  document.getElementById("qPlus").addEventListener("click", ()=>{ q = Math.min(20,q+1); val.textContent=q; });
+  const waLabel = document.getElementById("pdpWaLabel");
+  const setQ = n=>{
+    q = n; val.textContent = q; window.__pdpQty = q;
+    waLabel.textContent = "Order on WhatsApp — " + formatINR(p.price*q) + (q>1 ? ` (${q} pcs)` : "");
+  };
+  document.getElementById("qMinus").addEventListener("click", ()=>setQ(Math.max(1,q-1)));
+  document.getElementById("qPlus").addEventListener("click", ()=>setQ(Math.min(999,q+1)));
   document.getElementById("pdpAdd").addEventListener("click", ()=>{ Store.addToCart(p.id,q); showToast(`Added ${q} to cart`); });
 }
 
