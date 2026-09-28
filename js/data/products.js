@@ -147,51 +147,13 @@ const BASE_CATEGORIES = [
   { id: "decor-decor", name: "Decor", group: "decor" }
 ];
 
-/* ---------------- Admin data layer ----------------
-   Base PRODUCTS / BASE_CATEGORY_LABELS above are the built-in catalogue (read-only, ship with the site).
-   Admin-created/edited products and categories live in localStorage and are merged in at read time,
-   so the rest of the app (shop, search, home, product page) never needs to know the difference. */
+/* ---------------- Site config (read-only) ----------------
+   Catalogue + settings ship with the site. Edit PRODUCTS / BASE_CATEGORIES above and the
+   values below directly. No admin panel, no stored orders - orders go straight to WhatsApp. */
 const AdminStore = {
-  prodKey: "prabot_admin_products",   // { [id]: productObject }  -- add or override
-  delKey: "prabot_admin_deleted",     // [ id, id, ... ]          -- ids of base products hidden by admin
-  catKey: "prabot_admin_categories",  // { [id]: {id,name,group} } -- admin-created/edited categories (group is fixed, never editable)
-  catDelKey: "prabot_admin_cat_deleted", // [ id, id, ... ]        -- ids of base categories hidden by admin
-  pinKey: "prabot_admin_pin",
-  sessKey: "prabot_admin_session",
-  homeKey: "prabot_admin_home",   // { hero:{...}, about:{...}, promo:{...}, collections:[...] } -- overrides merged onto defaults
-  orderKey: "prabot_orders",      // [ orderObject, ... ] -- customer orders placed via checkout
-  settingsKey: "prabot_admin_settings", // { siteName, phone, email, address, freeShipThreshold, shipCost, currency }
-
-  read(k, fallback){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?fallback:v; }catch(e){ return fallback; } },
-  write(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
-
-  getOverrides(){ return this.read(this.prodKey, {}); },
-  getDeleted(){ return this.read(this.delKey, []); },
-  getCatOverrides(){ return this.read(this.catKey, {}); },
-  getCatDeleted(){ return this.read(this.catDelKey, []); },
-
-  /* ---- Orders ---- */
-  getOrders(){ return this.read(this.orderKey, []); },
-  saveOrders(list){ this.write(this.orderKey, list); },
-  addOrder(order){ const list = this.getOrders(); list.unshift(order); this.saveOrders(list); return order; },
-  nextOrderId(){
-    const list = this.getOrders();
-    let n = list.length + 1;
-    const exists = id => list.some(o=>o.id===id);
-    while(exists("ORD"+String(n).padStart(4,"0"))) n++;
-    return "ORD"+String(n).padStart(4,"0");
-  },
-  updateOrderStatus(id, status){
-    const list = this.getOrders();
-    const o = list.find(o=>o.id===id);
-    if(o){ o.status = status; o.history = (o.history||[]).concat([{status, at: new Date().toISOString()}]); this.saveOrders(list); }
-  },
-  deleteOrder(id){ this.saveOrders(this.getOrders().filter(o=>o.id!==id)); },
-
-  /* ---- Site settings ---- */
-  defaultSettings(){
+  getSettings(){
     return {
-      siteName: "Prabot Furniture",
+      siteName: "Adil Furnitures",
       phone: "+91 99593 34110",
       email: "hello@prabot.example",
       address: "Hyderabad, Telangana",
@@ -200,56 +162,11 @@ const AdminStore = {
       currency: "INR"
     };
   },
-  getSettings(){ return Object.assign({}, this.defaultSettings(), this.read(this.settingsKey, {})); },
-  saveSettings(partial){ this.write(this.settingsKey, Object.assign({}, this.getSettings(), partial)); },
-
-  /* ---- Homepage content ---- */
-  getHome(){ return this.read(this.homeKey, {}); },
-  saveHome(partial){
-    const cur = this.getHome();
-    this.write(this.homeKey, Object.assign({}, cur, partial));
-  },
-
-  upsertProduct(p){
-    const o = this.getOverrides(); o[p.id] = p; this.write(this.prodKey, o);
-  },
-  deleteProduct(id){
-    const o = this.getOverrides(); delete o[id]; this.write(this.prodKey, o);
-    const d = this.getDeleted(); if(!d.includes(id)){ d.push(id); this.write(this.delKey, d); }
-  },
-  restoreProduct(id){
-    const d = this.getDeleted().filter(x=>x!==id); this.write(this.delKey, d);
-  },
-  nextId(){
-    const all = allProducts();
-    let n = all.length + 1;
-    while(all.some(p=>p.id === "p"+String(n).padStart(2,"0"))) n++;
-    return "p"+String(n).padStart(2,"0");
-  },
-
-  /* Category = { id, name, group }. group must be one of FIXED_GROUPS and can't be changed via this API's caller
-     (the UI never offers a way to edit group on an existing category). */
-  upsertCategory(cat){
-    const c = this.getCatOverrides(); c[cat.id] = cat; this.write(this.catKey, c);
-  },
-  deleteCategory(id){
-    const c = this.getCatOverrides(); delete c[id]; this.write(this.catKey, c);
-    const d = this.getCatDeleted(); if(!d.includes(id)){ d.push(id); this.write(this.catDelKey, d); }
-  },
-  nextCategoryId(group){
-    const all = allCategories();
-    let n = 1;
-    while(all.some(c=>c.id === group+"-c"+n)) n++;
-    return group+"-c"+n;
-  },
-
-  /* ---- PIN / session ---- */
-  hasPin(){ return !!this.read(this.pinKey, null); },
-  setPin(pin){ this.write(this.pinKey, String(pin)); },
-  checkPin(pin){ return this.read(this.pinKey, null) === String(pin); },
-  isLoggedIn(){ return this.read(this.sessKey, false) === true; },
-  login(){ this.write(this.sessKey, true); },
-  logout(){ this.write(this.sessKey, false); }
+  getHome(){ return {}; },
+  getOverrides(){ return {}; },
+  getDeleted(){ return []; },
+  getCatOverrides(){ return {}; },
+  getCatDeleted(){ return []; }
 };
 
 function allProducts(){
@@ -305,7 +222,7 @@ function placeholderFor(kind){
   return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
 }
 function fb(kind){
-  return `class="lazy-img" onload="this.classList.add('loaded');this.parentElement&&this.parentElement.classList.remove('shimmer')" onerror="this.onerror=null;this.src='${placeholderFor(kind)}';this.classList.add('loaded');this.parentElement&&this.parentElement.classList.remove('shimmer')"`;
+  return `class="lazy-img" onload="this.classList.add('loaded');this.parentElement&&this.parentElement.classList.remove('shimmer')" onerror="this.onerror=null;this.src=&quot;${placeholderFor(kind)}&quot;;this.classList.add('loaded');this.parentElement&&this.parentElement.classList.remove('shimmer')"`;
 }
 
 /* ---------------- Store ---------------- */
