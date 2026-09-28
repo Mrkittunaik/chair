@@ -192,7 +192,7 @@ const AdminStore = {
   defaultSettings(){
     return {
       siteName: "Prabot Furniture",
-      phone: "+91 90000 00000",
+      phone: "+91 99593 34110",
       email: "hello@prabot.example",
       address: "Hyderabad, Telangana",
       freeShipThreshold: 25000,
