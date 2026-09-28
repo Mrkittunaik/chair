@@ -47,7 +47,9 @@ function afterCart(){
           <div class="sum-row"><span>Subtotal</span><span>${formatINR(sub)}</span></div>
           <div class="sum-row"><span>Delivery and install</span><span>${ship? formatINR(ship) : "Free"}</span></div>
           <div class="sum-total"><span>Total</span><span>${formatINR(sub+ship)}</span></div>
-          <a href="#/checkout" class="btn btn-primary btn-block" style="margin-top:18px;" id="checkout">Checkout</a>
+          <button class="btn btn-wa btn-block" style="margin-top:18px;" data-wa="cart">${WA_ICON}<span>Order on WhatsApp</span></button>
+          <a href="#/checkout" class="btn btn-secondary btn-block" style="margin-top:10px;" id="checkout">Checkout with details</a>
+          <a href="#" class="btn btn-ghost btn-block" style="margin-top:10px;" data-wa="bulk">Need bulk quantity? Ask on WhatsApp</a>
           <a href="#/shop" class="btn btn-ghost btn-block" style="margin-top:10px;">Keep shopping</a>
           ${ship? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;">Add ${formatINR(settings.freeShipThreshold-sub)} more for free delivery.</p>`:""}
         </aside>
@@ -89,7 +91,8 @@ function viewCheckout(){
           <div class="field"><label for="coEmail">Email</label><input id="coEmail" type="email" required></div>
           <div class="field"><label for="coAddress">Delivery address</label><textarea id="coAddress" required></textarea></div>
           <div class="field"><label for="coNotes">Order notes (optional)</label><textarea id="coNotes"></textarea></div>
-          <button class="btn btn-primary btn-block" type="submit">Place order — ${formatINR(sub+ship)}</button>
+          <button class="btn btn-wa btn-block" type="submit">${WA_ICON}<span>Send order on WhatsApp — ${formatINR(sub+ship)}</span></button>
+          <p style="font-size:12.5px;color:var(--ink-soft);margin-top:10px;">Your order details open in WhatsApp to ${WA_DISPLAY}. Tap Send there to confirm.</p>
         </form>
       </div>
       <aside class="summary">
@@ -131,7 +134,9 @@ function afterCheckout(){
       history: [{status:"pending", at:new Date().toISOString()}]
     };
     AdminStore.addOrder(order);
+    const msg = waOrderMsg(order);
     Store.setCart({});
+    waOpen(msg);
     location.hash = "#/order-confirmed/" + order.id;
   });
 }
@@ -158,7 +163,9 @@ function viewOrderConfirmed(id){
       <div class="sum-total"><span>Total</span><span>${formatINR(order.total)}</span></div>
       <p style="margin-top:14px;font-size:13px;color:var(--ink-soft);">Delivering to: ${escapeHtml(order.customer.address)}</p>
     </div>
-    <a href="#/shop" class="btn btn-primary" style="margin-top:18px;">Continue shopping</a>
+    <p style="margin-top:16px;font-size:13.5px;color:var(--ink-soft);">WhatsApp didn't open? Send the order to us directly:</p>
+    <a href="${waLink(waOrderMsg(order))}" target="_blank" rel="noopener" class="btn btn-wa" style="margin-top:8px;">${WA_ICON}<span>Send order on WhatsApp</span></a>
+    <a href="#/shop" class="btn btn-secondary" style="margin-top:8px;margin-left:8px;">Continue shopping</a>
   </div></section>`;
 }
 
