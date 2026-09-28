@@ -91,9 +91,10 @@ body{padding-top:var(--header-h);}
 .icon-btn:hover{background:rgba(20,20,20,.07);}
 .header-inner{height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:22px;}
 .logo{font-family:var(--serif);font-size:23px;font-weight:600;letter-spacing:-.02em;flex-shrink:0;display:inline-flex;align-items:center;line-height:0;}
-.logo-img{height:56px;width:auto;display:block;}
+.logo-img{height:42px;width:auto;display:block;}
 .site-header .container{max-width:none;padding-left:24px;padding-right:24px;}
-.site-footer .logo-img{height:64px;}
+.site-header{box-shadow:0 4px 18px rgba(0,0,0,.10);}
+.site-footer .logo-img{height:48px;}
 .main-nav{display:flex;gap:22px;flex-shrink:0;}
 .main-nav a{font-size:13.5px;font-weight:600;color:var(--ink-soft);padding:4px 0;border-bottom:1.5px solid transparent;}
 .main-nav a:hover{color:var(--ink);}
@@ -360,7 +361,7 @@ img.lazy-img.loaded{opacity:1;}
 @media (max-width:900px){
   :root{--header-h:64px;}
   .header-inner{gap:12px;}
-  .logo-img{height:46px;}
+  .logo-img{height:36px;}
   .header-search{display:none;}
   .mobile-search{display:block;padding:0 16px 12px;}
   .main-nav{display:none;}
@@ -439,8 +440,8 @@ img.lazy-img.loaded{opacity:1;}
 }
 @media (max-width:640px){
   :root{--header-h:60px;}
-  .logo-img{height:38px;}
-  .site-footer .logo-img{height:54px;}
+  .logo-img{height:30px;}
+  .site-footer .logo-img{height:42px;}
   .icon-btn{width:38px;height:38px;}
   .product-grid{grid-template-columns:repeat(2,1fr);gap:12px;}
   .pc-body{padding:11px 12px 13px;gap:5px;}
@@ -586,28 +587,3 @@ body{padding-top:var(--header-total);}
 
 /* 4. Body scroll lock that doesn't jump the page on iOS */
 body.nav-locked{position:relative;overflow:hidden;touch-action:none;}
-
-/* ===== Premium dark header (Adil Furnitures) ===== */
-.site-header,.site-header.scrolled{
-  background:linear-gradient(180deg,#1b1b1f 0%,#0e0e10 100%);
-  -webkit-backdrop-filter:none;backdrop-filter:none;
-  border-bottom:1px solid rgba(220,0,0,.55);
-  box-shadow:0 10px 30px rgba(0,0,0,.38);
-}
-.site-header .logo-img{height:46px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.55));}
-.site-header .header-search input,.site-header .mobile-search input{
-  background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#fff;
-  -webkit-backdrop-filter:none;backdrop-filter:none;}
-.site-header .header-search input::placeholder,.site-header .mobile-search input::placeholder{color:#9B9BA1;}
-.site-header .header-search input:focus,.site-header .mobile-search input:focus{
-  background:rgba(255,255,255,.14);border-color:var(--brand);color:#fff;}
-.site-header .header-search .s-icon{color:#B4B4BA;}
-.site-header .icon-group{background:rgba(255,255,255,.08);}
-.site-header .icon-btn{color:#fff;}
-.site-header .icon-btn:hover{background:rgba(255,255,255,.14);}
-@media (min-width:901px){
-  .site-header .main-nav a{color:#C6C6CB;}
-  .site-header .main-nav a:hover,.site-header .main-nav a.active{color:#fff;}
-}
-@media (max-width:900px){.site-header .logo-img{height:40px;}}
-@media (max-width:640px){.site-header .logo-img{height:34px;}}
