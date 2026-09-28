@@ -5,7 +5,11 @@ function renderHeader(active, query){
     <div class="container header-inner">
       <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo.png" alt="Adil Furnitures"></a>
       <nav class="main-nav" id="mainNav">
-        ${NAV.map(n=>`<a href="${n.href}" class="${active===n.key?'active':''}">${n.label}</a>`).join("")}
+        ${NAV.map(n=> n.wa
+          ? `<a href="${waLink(n.wa==='bulk'?waBulkMsg():waCustomMsg())}" data-wa="${n.wa}" class="nav-wa-link" target="_blank" rel="noopener">${n.label}</a>`
+          : `<a href="${n.href}" class="${active===n.key?'active':''}"${active===n.key?' aria-current="page"':''}>${n.label}</a>`
+        ).join("")}
+        <a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" class="btn btn-wa nav-cta" target="_blank" rel="noopener">${WA_ICON}<span>Chat on WhatsApp</span></a>
       </nav>
       <div class="nav-backdrop" id="navBackdrop"></div>
       <form class="header-search" id="headerSearchForm" role="search">
@@ -13,6 +17,7 @@ function renderHeader(active, query){
         <input type="search" id="headerSearchInput" value="${escapeHtml(q)}" placeholder="Search sofas, desks, beds…" aria-label="Search furniture">
       </form>
       <div class="header-actions">
+        <a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" class="wa-head" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">${WA_ICON}<span>WhatsApp</span></a>
         <div class="icon-group">
           <a href="#/wishlist" class="icon-btn" aria-label="Wishlist">${ICONS.heart}<span class="badge" id="wishBadge" hidden>0</span></a>
           <a href="#/cart" class="icon-btn" aria-label="Cart">${ICONS.bag}<span class="badge" id="cartBadge" hidden>0</span></a>
@@ -47,8 +52,13 @@ function renderHeader(active, query){
     nav.classList.contains("open") ? closeMenu() : openMenu();
   });
   backdrop.addEventListener("click", closeMenu);
-  nav.addEventListener("click", e=>{ if(e.target.tagName==="A") closeMenu(); });
-  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeMenu(); });
+  nav.addEventListener("click", e=>{ if(e.target.closest("a")) closeMenu(); });
+  window.__closeMenu = closeMenu;
+  if(!window.__navKeyBound){
+    window.__navKeyBound = true;
+    document.addEventListener("keydown", e=>{ if(e.key==="Escape" && window.__closeMenu) window.__closeMenu(); });
+    window.addEventListener("resize", ()=>{ if(window.innerWidth>900 && window.__closeMenu) window.__closeMenu(); });
+  }
 
   ["headerSearchForm","mobileSearchForm"].forEach(id=>{
     const form = document.getElementById(id);
@@ -97,6 +107,7 @@ function renderFooter(){
             <button class="btn btn-sm" type="submit">Subscribe</button>
           </form>
           <p style="margin-top:10px;">One email a month. Unsubscribe anytime.</p>
+          <p style="margin-top:14px;"><a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" target="_blank" rel="noopener" style="font-weight:700;">WhatsApp us: ${WA_DISPLAY}</a></p>
         </div>
       </div>
       <div class="footer-base">
@@ -105,6 +116,15 @@ function renderFooter(){
       </div>
     </div>
   </footer>`;
+  if(!document.getElementById("waFloat")){
+    const f = document.createElement("a");
+    f.id = "waFloat"; f.className = "wa-float";
+    f.href = waLink("Hello "+WA_BRAND+", I have a question.");
+    f.target = "_blank"; f.rel = "noopener"; f.setAttribute("data-wa","general");
+    f.setAttribute("aria-label","Chat on WhatsApp");
+    f.innerHTML = WA_ICON;
+    document.body.appendChild(f);
+  }
   document.getElementById("newsForm").addEventListener("submit", e=>{
     e.preventDefault(); e.target.reset(); showToast("Subscribed");
   });
@@ -143,7 +163,10 @@ function productCardHTML(p){
         <span class="pc-price">${formatINR(p.price)}</span>
         <span class="pc-rating">${ICONS.star}${p.rating}</span>
       </div>
-      <div class="pc-actions"><button class="btn btn-primary btn-sm btn-block" data-add="${p.id}">Add to cart</button></div>
+      <div class="pc-actions">
+        <button class="btn btn-primary btn-sm" data-add="${p.id}">Add to cart</button>
+        <button class="btn btn-wa btn-sm" data-wa="product" data-pid="${p.id}" data-qty="1" aria-label="Order ${escapeHtml(p.name)} on WhatsApp">${WA_ICON}<span>Order</span></button>
+      </div>
     </div>
   </article>`;
 }
