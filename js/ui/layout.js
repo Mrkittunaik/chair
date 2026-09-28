@@ -3,7 +3,7 @@ function renderHeader(active, query){
   document.getElementById("headerRoot").innerHTML = `
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo-light.png" alt="Adil Furnitures"></a>
+      <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo.png" alt="Adil Furnitures"></a>
       <nav class="main-nav" id="mainNav">
         ${NAV.map(n=>`<a href="${n.href}" class="${active===n.key?'active':''}">${n.label}</a>`).join("")}
       </nav>
