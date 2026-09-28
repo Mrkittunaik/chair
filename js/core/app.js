@@ -55,14 +55,9 @@ function render(){
     case "product": html = viewProduct(id); after = ()=>afterProduct(id); break;
     case "cart": html = viewCart(); after = afterCart; break;
     case "checkout": html = viewCheckout(); after = afterCheckout; break;
-    case "order-confirmed": html = viewOrderConfirmed(id); break;
     case "wishlist": html = viewWishlist(); break;
     case "about": html = viewAbout(); break;
     case "contact": html = viewContact(); after = afterContact; break;
-    case "admin":
-      if(id === "panel" && AdminStore.isLoggedIn()){ html = viewAdminPanel(params); after = afterAdminPanel; }
-      else { html = viewAdminLogin(); after = afterAdminLogin; }
-      break;
     default: html = notFound();
   }
 
