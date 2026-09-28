@@ -3,7 +3,7 @@ function renderHeader(active, query){
   document.getElementById("headerRoot").innerHTML = `
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#/" class="logo">PRABOT.</a>
+      <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo.png" alt="Adil Furnitures"></a>
       <nav class="main-nav" id="mainNav">
         ${NAV.map(n=>`<a href="${n.href}" class="${active===n.key?'active':''}">${n.label}</a>`).join("")}
       </nav>
@@ -67,7 +67,7 @@ function renderFooter(){
     <div class="container" style="padding:0;">
       <div class="footer-grid">
         <div>
-          <div class="logo">PRABOT.</div>
+          <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo-light.png" alt="Adil Furnitures"></a>
           <p>Furniture made for the way people actually live and work — comfortable, durable, and built to be used every day.</p>
         </div>
         <div>
