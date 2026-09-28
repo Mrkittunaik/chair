@@ -47,8 +47,7 @@ function afterCart(){
           <div class="sum-row"><span>Subtotal</span><span>${formatINR(sub)}</span></div>
           <div class="sum-row"><span>Delivery and install</span><span>${ship? formatINR(ship) : "Free"}</span></div>
           <div class="sum-total"><span>Total</span><span>${formatINR(sub+ship)}</span></div>
-          <button class="btn btn-wa btn-block" style="margin-top:18px;" data-wa="cart">${WA_ICON}<span>Order on WhatsApp</span></button>
-          <a href="#/checkout" class="btn btn-secondary btn-block" style="margin-top:10px;" id="checkout">Checkout with details</a>
+          <a href="#/checkout" class="btn btn-wa btn-block" style="margin-top:18px;" id="checkout">${WA_ICON}<span>Place order on WhatsApp</span></a>
           <a href="#" class="btn btn-ghost btn-block" style="margin-top:10px;" data-wa="bulk">Need bulk quantity? Ask on WhatsApp</a>
           <a href="#/shop" class="btn btn-ghost btn-block" style="margin-top:10px;">Keep shopping</a>
           ${ship? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;">Add ${formatINR(settings.freeShipThreshold-sub)} more for free delivery.</p>`:""}
@@ -79,7 +78,7 @@ function viewCheckout(){
     <div class="container">
       <p class="breadcrumb"><a href="#/">Home</a> / <a href="#/cart">Cart</a> / Checkout</p>
       <h1 class="page-title">Checkout</h1>
-      <p class="page-desc">Enter your delivery details to place the order.</p>
+      <p class="page-desc">Enter your delivery details. Your full order opens in WhatsApp, just tap Send.</p>
     </div>
   </section>
   <section class="section">
@@ -88,7 +87,7 @@ function viewCheckout(){
         <form id="checkoutForm">
           <div class="field"><label for="coName">Full name</label><input id="coName" required></div>
           <div class="field"><label for="coPhone">Phone</label><input id="coPhone" type="tel" required></div>
-          <div class="field"><label for="coEmail">Email</label><input id="coEmail" type="email" required></div>
+          <div class="field"><label for="coEmail">Email (optional)</label><input id="coEmail" type="email"></div>
           <div class="field"><label for="coAddress">Delivery address</label><textarea id="coAddress" required></textarea></div>
           <div class="field"><label for="coNotes">Order notes (optional)</label><textarea id="coNotes"></textarea></div>
           <button class="btn btn-wa btn-block" type="submit">${WA_ICON}<span>Send order on WhatsApp — ${formatINR(sub+ship)}</span></button>
@@ -110,63 +109,19 @@ function afterCheckout(){
   if(!form) return;
   form.addEventListener("submit", e=>{
     e.preventDefault();
-    const cart = Store.getCart();
-    const ids = Object.keys(cart);
-    const items = ids.map(id=>{
-      const p = findProduct(id);
-      return p ? { id:p.id, name:p.name, price:p.price, qty:cart[id] } : null;
-    }).filter(Boolean);
-    const settings = AdminStore.getSettings();
-    const sub = Store.cartTotal();
-    const ship = sub >= settings.freeShipThreshold ? 0 : settings.shipCost;
-    const order = {
-      id: AdminStore.nextOrderId(),
-      createdAt: new Date().toISOString(),
-      status: "pending",
-      customer: {
-        name: document.getElementById("coName").value.trim(),
-        phone: document.getElementById("coPhone").value.trim(),
-        email: document.getElementById("coEmail").value.trim(),
-        address: document.getElementById("coAddress").value.trim(),
-        notes: document.getElementById("coNotes").value.trim()
-      },
-      items, subtotal: sub, shipping: ship, total: sub+ship,
-      history: [{status:"pending", at:new Date().toISOString()}]
+    const customer = {
+      name: document.getElementById("coName").value.trim(),
+      phone: document.getElementById("coPhone").value.trim(),
+      email: document.getElementById("coEmail").value.trim(),
+      address: document.getElementById("coAddress").value.trim(),
+      notes: document.getElementById("coNotes").value.trim()
     };
-    AdminStore.addOrder(order);
-    const msg = waOrderMsg(order);
+    const msg = waCartMsg(customer);
     Store.setCart({});
     waOpen(msg);
-    location.hash = "#/order-confirmed/" + order.id;
+    showToast("Opening WhatsApp…");
+    location.hash = "#/shop";
   });
-}
-
-/* ---------------- View: Order confirmation ---------------- */
-function viewOrderConfirmed(id){
-  const order = AdminStore.getOrders().find(o=>o.id===id);
-  if(!order){
-    return `<section class="section"><div class="container"><div class="empty-state">
-      <h3>Order not found</h3><a href="#/shop" class="btn btn-primary">Browse furniture</a></div></div></section>`;
-  }
-  return `
-  <section class="page-head">
-    <div class="container">
-      <h1 class="page-title">Thank you, ${escapeHtml(order.customer.name)}!</h1>
-      <p class="page-desc">Your order <strong>${order.id}</strong> has been placed. We'll contact you at ${escapeHtml(order.customer.phone)} to confirm delivery.</p>
-    </div>
-  </section>
-  <section class="section"><div class="container" style="max-width:640px;">
-    <div class="form-card">
-      <h3 style="margin-bottom:12px;">Order summary</h3>
-      ${order.items.map(it=>`<div class="sum-row"><span>${escapeHtml(it.name)} × ${it.qty}</span><span>${formatINR(it.price*it.qty)}</span></div>`).join("")}
-      <div class="sum-row"><span>Delivery</span><span>${order.shipping? formatINR(order.shipping):"Free"}</span></div>
-      <div class="sum-total"><span>Total</span><span>${formatINR(order.total)}</span></div>
-      <p style="margin-top:14px;font-size:13px;color:var(--ink-soft);">Delivering to: ${escapeHtml(order.customer.address)}</p>
-    </div>
-    <p style="margin-top:16px;font-size:13.5px;color:var(--ink-soft);">WhatsApp didn't open? Send the order to us directly:</p>
-    <a href="${waLink(waOrderMsg(order))}" target="_blank" rel="noopener" class="btn btn-wa" style="margin-top:8px;">${WA_ICON}<span>Send order on WhatsApp</span></a>
-    <a href="#/shop" class="btn btn-secondary" style="margin-top:8px;margin-left:8px;">Continue shopping</a>
-  </div></section>`;
 }
 
 /* ---------------- View: Wishlist ---------------- */
