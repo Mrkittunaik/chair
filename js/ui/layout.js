@@ -112,7 +112,7 @@ function renderFooter(){
       </div>
       <div class="footer-base">
         <span>© ${new Date().getFullYear()} ${escapeHtml(AdminStore.getSettings().siteName)}</span>
-        <span>Free delivery and installation on orders above ${formatINR(AdminStore.getSettings().freeShipThreshold)} · <a href="#/admin" style="opacity:.45;font-size:11px;">Admin</a></span>
+        <span>Free delivery and installation on orders above ${formatINR(AdminStore.getSettings().freeShipThreshold)}</span>
       </div>
     </div>
   </footer>`;
