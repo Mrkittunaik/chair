@@ -90,12 +90,12 @@ function viewContact(){
             </select>
           </div>
           <div class="field"><label for="cMsg">Message</label><textarea id="cMsg" required></textarea></div>
-          <button class="btn btn-primary btn-block" type="submit">Send message</button>
+          <button class="btn btn-wa btn-block" type="submit">${WA_ICON}<span>Send on WhatsApp</span></button>
         </form>
       </div>
       <div>
         <div class="info-line"><strong>Workshop</strong><span>${escapeHtml(AdminStore.getSettings().address)}</span></div>
-        <div class="info-line"><strong>Phone</strong><span>${escapeHtml(AdminStore.getSettings().phone)}</span></div>
+        <div class="info-line"><strong>Phone / WhatsApp</strong><span><a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" target="_blank" rel="noopener">${WA_DISPLAY}</a></span></div>
         <div class="info-line"><strong>Email</strong><span>${escapeHtml(AdminStore.getSettings().email)}</span></div>
         <div class="info-line"><strong>Hours</strong><span>Mon–Sat, 10am to 7pm</span></div>
         <div class="about-img" style="margin-top:22px;"><img src="${IMG.collectionLiving}" ${fb("sofas")} alt="Showroom floor" loading="lazy"></div>
@@ -105,7 +105,13 @@ function viewContact(){
 }
 function afterContact(){
   document.getElementById("contactForm").addEventListener("submit", e=>{
-    e.preventDefault(); e.target.reset(); showToast("Message sent");
+    e.preventDefault();
+    const name = document.getElementById("cName").value.trim();
+    const email = document.getElementById("cEmail").value.trim();
+    const topic = document.getElementById("cTopic").value;
+    const text = document.getElementById("cMsg").value.trim();
+    waOpen(`Hello ${WA_BRAND},\n\n*${topic}*\n${text}\n\nName: ${name}\nEmail: ${email}`);
+    e.target.reset(); showToast("Opening WhatsApp…");
   });
 }
 
