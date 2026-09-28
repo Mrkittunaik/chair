@@ -16,6 +16,5 @@ const NAV = [
   {href:"#/shop?cat=office", label:"Office", key:"office"},
   {href:"#/shop?cat=gaming", label:"Gaming", key:"gaming"},
   {href:"#/about", label:"About", key:"about"},
-  {href:"#/contact", label:"Contact", key:"contact"},
-  {href:"#", label:"Bulk & Custom", key:"bulk", wa:"bulk"}
+  {href:"#/contact", label:"Contact", key:"contact"}
 ];
