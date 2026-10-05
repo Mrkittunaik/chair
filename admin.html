@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin — Adil Furnitures</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:15px/1.4 system-ui,sans-serif;background:#f4f2ec;color:#1a1a1a}
+.wrap{max-width:900px;margin:0 auto;padding:20px}h1{font-size:22px;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+button,.btn{background:#dc0000;color:#fff;border:0;padding:10px 16px;font-weight:600;cursor:pointer;border-radius:4px;font-size:14px;text-decoration:none}
+button.sec{background:#fff;color:#1a1a1a;border:1px solid #bbb}button.del{background:#fff;color:#b3261e;border:1px solid #b3261e}
+button:disabled{opacity:.5}
+.card{background:#fff;border:1px solid #ddd;padding:16px;margin-bottom:16px;border-radius:6px}
+label{display:block;font-size:12px;font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;padding:9px;border:1px solid #bbb;border-radius:4px;font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:600px){.row{grid-template-columns:1fr}}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #eee}
+.item img{width:64px;height:64px;object-fit:cover;background:#e4e1d8;border-radius:4px;flex:none}
+.item .meta{flex:1;min-width:0}.item .meta b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .meta small{color:#666}.item .acts{display:flex;gap:6px}
+#prev{width:140px;height:140px;object-fit:cover;border-radius:4px;margin-top:8px;display:none}
+#msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:4px;display:none}
+.hide{display:none}
+</style></head><body>
+<div class="wrap">
+ <div id="login" class="card" style="max-width:360px;margin:60px auto">
+  <h1>Admin login</h1>
+  <label for="pin">Admin PIN / password</label>
+  <input id="pin" type="password" autocomplete="current-password">
+  <p style="margin:14px 0 0"><button id="go">Log in</button></p>
+ </div>
+
+ <div id="panel" class="hide">
+  <div class="top"><h1>Products</h1>
+   <div><button id="add">+ Add product</button> <a class="btn sec" style="background:#fff;color:#1a1a1a;border:1px solid #bbb" href="/" target="_blank">View site</a> <button class="sec" id="out">Log out</button></div></div>
+
+  <form id="form" class="card hide">
+   <h1 id="ftitle" style="font-size:18px">Add product</h1>
+   <label>Name</label><input id="f_name" required maxlength="120">
+   <div class="row"><div><label>Group</label><select id="f_group"></select></div>
+   <div><label>Category</label><select id="f_cat"></select></div></div>
+   <div class="row"><div><label>Price (₹)</label><input id="f_price" type="number" min="0" required></div>
+   <div><label>Rating (0-5)</label><input id="f_rating" type="number" min="0" max="5" step="0.1" value="4.5"></div></div>
+   <div class="row"><div><label>Material</label><input id="f_mat" maxlength="60"></div>
+   <div><label>Color / finish</label><input id="f_color" maxlength="60"></div></div>
+   <label>Description</label><textarea id="f_desc" rows="3" maxlength="600"></textarea>
+   <label>Photo (jpg/png/webp)</label><input id="f_file" type="file" accept="image/*">
+   <img id="prev" alt="">
+   <p style="margin:16px 0 0"><button id="save" type="submit">Save product</button> <button type="button" class="sec" id="cancel">Cancel</button></p>
+  </form>
+
+  <div class="card" id="list"></div>
+ </div>
+</div>
+<div id="msg"></div>
+
+<script src="js/data/products.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let PIN = sessionStorage.getItem('adm_pin') || '', D = {overrides:{},deleted:[]}, editing = null, imgUrl = '';
+const toast = t => { const m=$('msg'); m.textContent=t; m.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>m.style.display='none',2600); };
+const H = () => ({'x-admin-pin':PIN});
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function login(){
+  PIN = $('pin').value || PIN;
+  const r = await fetch('/api/auth',{headers:H()}).catch(()=>null);
+  if(!r || !r.ok){ toast(r ? 'Wrong PIN' : 'API not reachable (deploy on Cloudflare Pages)'); sessionStorage.removeItem('adm_pin'); return; }
+  sessionStorage.setItem('adm_pin', PIN);
+  $('login').classList.add('hide'); $('panel').classList.remove('hide');
+  await load();
+}
+async function load(){
+  const r = await fetch('/api/data',{cache:'no-store'}); D = await r.json();
+  D.overrides = D.overrides || {}; D.deleted = D.deleted || [];
+  drawList();
+}
+function products(){
+  const del = new Set(D.deleted);
+  const out = PRODUCTS.filter(p=>!del.has(p.id)).map(p=>D.overrides[p.id]||p);
+  Object.keys(D.overrides).forEach(id=>{ if(!PRODUCTS.some(p=>p.id===id)) out.push(D.overrides[id]); });
+  return out.reverse();
+}
+function drawList(){
+  const l = products();
+  $('list').innerHTML = `<b>${l.length} products</b>` + l.map(p=>`
+   <div class="item"><img src="${esc(p.img)}" alt="">
+    <div class="meta"><b>${esc(p.name)}</b><small>${esc(p.category)} · ₹${(p.price||0).toLocaleString('en-IN')}</small></div>
+    <div class="acts"><button class="sec" data-e="${esc(p.id)}">Edit</button><button class="del" data-d="${esc(p.id)}">Delete</button></div></div>`).join('');
+}
+async function persist(){
+  const r = await fetch('/api/data',{method:'PUT',headers:{...H(),'content-type':'application/json'},body:JSON.stringify(D)});
+  if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(e.error||'save failed'); }
+}
+function fillCats(){
+  const g = $('f_group').value;
+  $('f_cat').innerHTML = allCategories().filter(c=>c.group===g).map(c=>`<option>${esc(c.name)}</option>`).join('');
+}
+function openForm(p){
+  editing = p ? p.id : null; imgUrl = p ? p.img : '';
+  $('ftitle').textContent = p ? 'Edit product' : 'Add product';
+  $('f_group').innerHTML = FIXED_GROUPS.map(g=>`<option value="${g}">${esc(BASE_CATEGORY_LABELS[g])}</option>`).join('');
+  $('f_group').value = p ? p.group : 'office'; fillCats();
+  if(p) $('f_cat').value = p.category;
+  $('f_name').value = p?p.name:''; $('f_price').value = p?p.price:''; $('f_rating').value = p?p.rating:4.5;
+  $('f_mat').value = p?p.material||'':''; $('f_color').value = p?p.color||'':''; $('f_desc').value = p?p.desc||'':'';
+  $('f_file').value = ''; $('prev').style.display = imgUrl?'block':'none'; $('prev').src = imgUrl;
+  $('form').classList.remove('hide'); $('f_name').focus(); window.scrollTo(0,0);
+}
+async function shrink(file){
+  const b = await createImageBitmap(file), k = Math.min(1, 1000/Math.max(b.width,b.height));
+  const c = document.createElement('canvas'); c.width = Math.round(b.width*k); c.height = Math.round(b.height*k);
+  c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+  return new Promise(r=>c.toBlob(r,'image/jpeg',.85));
+}
+$('go').onclick = login; $('pin').onkeydown = e => { if(e.key==='Enter') login(); };
+$('out').onclick = () => { sessionStorage.removeItem('adm_pin'); location.reload(); };
+$('add').onclick = () => openForm(null);
+$('cancel').onclick = () => $('form').classList.add('hide');
+$('f_group').onchange = fillCats;
+$('f_file').onchange = async () => { const f=$('f_file').files[0]; if(f){ $('prev').src=URL.createObjectURL(f); $('prev').style.display='block'; } };
+$('list').onclick = async e => {
+  const ed = e.target.dataset.e, dl = e.target.dataset.d;
+  if(ed) return openForm(products().find(p=>p.id===ed));
+  if(dl && confirm('Delete this product from the website?')){
+    if(PRODUCTS.some(p=>p.id===dl) && !D.deleted.includes(dl)) D.deleted.push(dl);
+    delete D.overrides[dl];
+    try{ await persist(); drawList(); toast('Deleted'); }catch(err){ toast(err.message); await load(); }
+  }
+};
+$('form').onsubmit = async e => {
+  e.preventDefault(); const btn = $('save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const f = $('f_file').files[0];
+    if(f){
+      const blob = await shrink(f);
+      const r = await fetch('/api/upload',{method:'POST',headers:{...H(),'content-type':'image/jpeg'},body:blob});
+      const j = await r.json(); if(!r.ok) throw new Error(j.error||'upload failed'); imgUrl = j.url;
+    }
+    if(!imgUrl) throw new Error('Please choose a photo');
+    const id = editing || 'n' + Date.now().toString(36);
+    D.overrides[id] = { id, name:$('f_name').value.trim(), group:$('f_group').value, category:$('f_cat').value,
+      price:+$('f_price').value, rating:+$('f_rating').value||4.5, material:$('f_mat').value.trim(),
+      color:$('f_color').value.trim(), desc:$('f_desc').value.trim(), img:imgUrl };
+    await persist(); await load();
+    $('form').classList.add('hide'); toast('Saved — live on the website');
+  }catch(err){ toast(err.message); }
+  btn.disabled = false; btn.textContent = 'Save product';
+};
+if(PIN) login();
+</script></body></html>
