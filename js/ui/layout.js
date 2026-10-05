@@ -165,7 +165,6 @@ function productCardHTML(p){
       </div>
       <div class="pc-actions">
         <button class="btn btn-primary btn-sm" data-add="${p.id}">Add to cart</button>
-        <button class="btn btn-wa btn-sm" data-wa="product" data-pid="${p.id}" data-qty="1" aria-label="Order ${escapeHtml(p.name)} on WhatsApp">${WA_ICON}<span>Order</span></button>
       </div>
     </div>
   </article>`;
