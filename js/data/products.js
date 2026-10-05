@@ -147,9 +147,24 @@ const BASE_CATEGORIES = [
   { id: "decor-decor", name: "Decor", group: "decor" }
 ];
 
-/* ---------------- Site config (read-only) ----------------
-   Catalogue + settings ship with the site. Edit PRODUCTS / BASE_CATEGORIES above and the
-   values below directly. No admin panel, no stored orders - orders go straight to WhatsApp. */
+/* ---------------- Site config + live catalogue ----------------
+   Base catalogue ships in PRODUCTS above. Products added/edited/deleted from /admin.html are stored
+   server-side (Cloudflare KV via /api/data) and layered on top here. Cached in localStorage for fast paint. */
+const SITE_KEY = "adil_site_data";
+let SITE_DATA = (()=>{ try{ return JSON.parse(localStorage.getItem(SITE_KEY)) || {overrides:{},deleted:[]}; }catch(e){ return {overrides:{},deleted:[]}; } })();
+async function loadSiteData(){
+  try{
+    const r = await fetch("/api/data", {cache:"no-store"});
+    if(!r.ok) return;
+    const d = await r.json(), str = JSON.stringify(d);
+    if(str === JSON.stringify(SITE_DATA)) return;
+    SITE_DATA = d;
+    try{ localStorage.setItem(SITE_KEY, str); }catch(e){}
+    if(typeof render === "function" && !/^#\/(cart|checkout)/.test(location.hash)) render();
+  }catch(e){}
+}
+loadSiteData();
+
 const AdminStore = {
   getSettings(){
     return {
@@ -163,8 +178,8 @@ const AdminStore = {
     };
   },
   getHome(){ return {}; },
-  getOverrides(){ return {}; },
-  getDeleted(){ return []; },
+  getOverrides(){ return SITE_DATA.overrides || {}; },
+  getDeleted(){ return SITE_DATA.deleted || []; },
   getCatOverrides(){ return {}; },
   getCatDeleted(){ return []; }
 };
