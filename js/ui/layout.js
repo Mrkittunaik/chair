@@ -7,7 +7,7 @@ function renderHeader(active, query){
       <nav class="main-nav" id="mainNav">
         ${NAV.map(n=> n.wa
           ? `<a href="${waLink(n.wa==='bulk'?waBulkMsg():waCustomMsg())}" data-wa="${n.wa}" class="nav-wa-link" target="_blank" rel="noopener">${n.label}</a>`
-          : `<a href="${n.href}" class="${active===n.key?'active':''}"${active===n.key?' aria-current="page"':''}>${n.label}</a>`
+          : `<a href="${n.href}" class="${(n.cls||'')+' '+(active===n.key?'active':'')}"${active===n.key?' aria-current="page"':''}>${n.label}</a>`
         ).join("")}
         <a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" class="btn btn-wa nav-cta" target="_blank" rel="noopener">${WA_ICON}<span>Chat on WhatsApp</span></a>
       </nav>
@@ -84,10 +84,8 @@ function renderFooter(){
           <h4>Shop</h4>
           <ul>
             <li><a href="#/shop">All furniture</a></li>
-            <li><a href="#/shop?cat=sofas">Sofas</a></li>
-            <li><a href="#/shop?cat=office">Office</a></li>
-            <li><a href="#/shop?cat=bedroom">Bedroom</a></li>
-            <li><a href="#/shop?cat=gaming">Gaming</a></li>
+            ${Object.entries(allCategoryLabels()).slice(0,5).map(([k,v])=>`<li><a href="#/shop?cat=${k}">${escapeHtml(v)}</a></li>`).join("")}
+            <li><a href="#/bulk">Office bulk enquiry</a></li>
           </ul>
         </div>
         <div>
@@ -111,7 +109,7 @@ function renderFooter(){
         </div>
       </div>
       <div class="footer-base">
-        <span>© ${new Date().getFullYear()} ${escapeHtml(AdminStore.getSettings().siteName)}</span>
+        <span>© ${new Date().getFullYear()} ${escapeHtml(AdminStore.getSettings().siteName)}${AdminStore.getSettings().footerText?" · "+escapeHtml(AdminStore.getSettings().footerText):""}</span>
         <span>Free delivery and installation on orders above ${formatINR(AdminStore.getSettings().freeShipThreshold)}</span>
       </div>
     </div>
@@ -148,23 +146,33 @@ function showToast(msg){
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
 
 /* ---------------- Product card ---------------- */
+function stockBadge(p){
+  return p.stockStatus==="OUT_OF_STOCK" ? `<span class="badge-stock out">Out of stock</span>`
+    : p.stockStatus==="LOW_STOCK" ? `<span class="badge-stock low">Few left</span>` : "";
+}
+function priceHTML(p){
+  return `<span class="pc-price">${formatINR(p.price)}</span>` + (p.compareAtPrice>p.price ? ` <s class="pc-was">${formatINR(p.compareAtPrice)}</s>` : "");
+}
 function productCardHTML(p){
   const wished = Store.inWish(p.id);
+  const out = isOut(p);
   return `
-  <article class="product-card">
+  <article class="product-card${out?" is-out":""}">
     <div class="pc-media img-wrap shimmer">
-      <a href="#/product/${p.id}"><img src="${p.img}" ${fb(p.group)} alt="${escapeHtml(p.name)}" loading="lazy"></a>
+      <a href="#/product/${p.id}"><img ${imgAttrs(p)} ${fb(p.group)} alt="${escapeHtml(p.name)}" loading="lazy" decoding="async"></a>
+      ${stockBadge(p)}${p.discount>0 && !out ? `<span class="badge-off">-${p.discount}%</span>` : ""}
       <button class="pc-wish ${wished?'on':''}" data-wish="${p.id}" aria-label="${wished?'Remove from wishlist':'Save to wishlist'}">${wished?ICONS.heartFill:ICONS.heart}</button>
     </div>
     <div class="pc-body">
       <div class="pc-cat">${p.category}</div>
       <a href="#/product/${p.id}" class="pc-name">${escapeHtml(p.name)}</a>
       <div class="pc-meta">
-        <span class="pc-price">${formatINR(p.price)}</span>
+        <span>${priceHTML(p)}</span>
         <span class="pc-rating">${ICONS.star}${p.rating}</span>
       </div>
       <div class="pc-actions">
-        <button class="btn btn-primary btn-sm" data-add="${p.id}">Add to cart</button>
+        ${out ? `<button class="btn btn-secondary btn-sm" disabled>Out of stock</button>` : `<button class="btn btn-primary btn-sm" data-add="${p.id}">Add to cart</button>`}
+        <button class="btn btn-wa btn-sm pc-wa" data-wa="product" data-pid="${p.id}" data-qty="1" aria-label="${out?"Ask availability":"Enquire"} on WhatsApp">${WA_ICON}</button>
       </div>
     </div>
   </article>`;
@@ -177,7 +185,7 @@ function renderProductGrid(el, list){
 
 document.addEventListener("click", e=>{
   const add = e.target.closest("[data-add]");
-  if(add){ Store.addToCart(add.dataset.add,1); showToast("Added to cart"); return; }
+  if(add){ if(Store.addToCart(add.dataset.add,1)) showToast("Added to cart"); return; }
   const wish = e.target.closest("[data-wish]");
   if(wish){
     const on = Store.toggleWish(wish.dataset.wish);
