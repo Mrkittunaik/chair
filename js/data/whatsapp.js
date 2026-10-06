@@ -1,23 +1,33 @@
 /* ---------------- WhatsApp ordering ----------------
    Every enquiry (single product, cart, bulk, custom, contact) opens a
    pre-filled WhatsApp chat with the store number below.               */
-const WA_NUMBER = "919959334110";          // +91 99593 34110 (digits only, with country code)
-const WA_DISPLAY = "+91 99593 34110";
-const WA_BRAND = "Adil Furnitures";
+let WA_NUMBER = "919959334110";          // +91 99593 34110 (digits only, with country code)
+let WA_DISPLAY = "+91 99593 34110";
+let WA_BRAND = "Adil Furnitures";
 const SITE_URL = "";                        // set to the live domain, e.g. "https://adilfurnitures.com" (blank = current address)
 
+/* number / brand come from Admin > Settings (SiteSettings.whatsappNumber) once the catalogue has loaded */
+function waSync(){
+  const st = AdminStore.getSettings();
+  if(st.whatsappNumber) WA_NUMBER = st.whatsappNumber.replace(/\D/g,"");
+  if(st.phone) WA_DISPLAY = st.phone;
+  if(st.siteName) WA_BRAND = st.siteName;
+}
 function siteBase(){
   if(SITE_URL) return SITE_URL.replace(/\/+$/, "") + "/";
   return location.origin + location.pathname;
 }
 function productUrl(p){ return siteBase() + "#/product/" + p.id; }
 function waLink(text){ return "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(text); }
-function waOpen(text){
+/* Tracks the click first (keepalive request, not awaited so the popup isn't blocked), then opens WhatsApp. */
+function waOpenUrl(url, kind, pid){
+  if(typeof Track!=="undefined") Track.wa(kind, pid);
   // NB: don't pass "noopener" here - it makes window.open() return null even on success
-  const w = window.open(waLink(text), "_blank");
+  const w = window.open(url, "_blank");
   if(w){ try{ w.opener = null; }catch(e){} }
-  else location.href = waLink(text);         // popup blocked -> same tab
+  else location.href = url;                  // popup blocked -> same tab
 }
+function waOpen(text, kind, pid){ waOpenUrl(waLink(text), kind||"general", pid); }
 
 function waLine(p, qty){
   return `*${p.name}*\nPrice: ${formatINR(p.price)}\nQuantity: ${qty}\nAmount: ${formatINR(p.price*qty)}\nLink: ${productUrl(p)}`;
@@ -85,5 +95,6 @@ document.addEventListener("click", e=>{
   else if(kind==="custom") msg = waCustomMsg(p);
   else if(kind==="cart") msg = waCartMsg();
   else msg = `Hello ${WA_BRAND}, I have a question.`;
-  waOpen(msg);
+  waOpen(msg, kind, p ? p.id : "");
 });
+waSync();
