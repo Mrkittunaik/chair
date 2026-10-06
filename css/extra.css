@@ -83,3 +83,8 @@ body.pop-open{overflow:hidden;}
 .bulk-points li::before{content:"✓";color:#128C4A;font-weight:700;margin-right:8px;}
 @media(max-width:900px){.bulk-layout{grid-template-columns:1fr;}.bulk-aside{order:-1;position:static;}}
 @media(max-width:640px){.bulk-grid{grid-template-columns:1fr;}.bulk-hero{padding:24px 0 20px;}}
+
+/* discount badge to the left so it never covers the wishlist heart */
+.pc-media .badge-off{left:10px;right:auto;top:10px;}
+/* low/out-of-stock tag moves to bottom-left of the image */
+.pc-media .badge-stock{left:10px;top:auto;bottom:10px;}
