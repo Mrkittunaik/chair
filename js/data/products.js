@@ -148,69 +148,76 @@ const BASE_CATEGORIES = [
 ];
 
 /* ---------------- Site config + live catalogue ----------------
-   Base catalogue ships in PRODUCTS above. Products added/edited/deleted from /admin.html are stored
-   server-side (Cloudflare KV via /api/data) and layered on top here. Cached in localStorage for fast paint. */
-const SITE_KEY = "adil_site_data";
-let SITE_DATA = (()=>{ try{ return JSON.parse(localStorage.getItem(SITE_KEY)) || {overrides:{},deleted:[]}; }catch(e){ return {overrides:{},deleted:[]}; } })();
-async function loadSiteData(){
+   MongoDB (via /api/public/catalog) is the source of truth. The base PRODUCTS / BASE_CATEGORIES above are
+   (1) the seed/migration source for the server and (2) an offline fallback if the backend has never been reachable.
+   The last server catalogue is cached in localStorage only to paint faster on the next visit. */
+const CAT_KEY = "adil_catalog_v2";
+let CATALOG = (()=>{ try{ return JSON.parse(localStorage.getItem(CAT_KEY)) || null; }catch(e){ return null; } })();
+let CATALOG_LOADED = false;
+async function loadCatalog(){
   try{
-    const r = await fetch("/api/data", {cache:"no-store"});
-    if(!r.ok) return;
-    const d = await r.json(), str = JSON.stringify(d);
-    if(str === JSON.stringify(SITE_DATA)) return;
-    SITE_DATA = d;
-    try{ localStorage.setItem(SITE_KEY, str); }catch(e){}
-    if(typeof render === "function" && !/^#\/(cart|checkout)/.test(location.hash)) render();
+    const d = await API.get("/api/public/catalog", {retries:8, wake:true, timeout:25000});
+    const changed = !CATALOG || CATALOG.version !== d.version || JSON.stringify(CATALOG.products) !== JSON.stringify(d.products);
+    CATALOG = d; CATALOG_LOADED = true;
+    try{ localStorage.setItem(CAT_KEY, JSON.stringify(d)); }catch(e){}
+    if(typeof waSync === "function") waSync();
+    if(typeof Store !== "undefined") Store.pruneCart();
+    if(typeof Popup !== "undefined") Popup.schedule();
+    if(changed && typeof render === "function" && !/^#\/(checkout|bulk)/.test(location.hash)) render();
   }catch(e){}
 }
-loadSiteData();
+/* live updates: cheap version poll (tab visible only). A changed version re-fetches the catalogue. */
+setInterval(async ()=>{
+  if(document.hidden || !CATALOG_LOADED) return;
+  try{ const v = await API.get("/api/public/version",{retries:0,timeout:8000}); if(!CATALOG || v.version !== CATALOG.version) loadCatalog(); }catch(e){}
+}, 30000);
+loadCatalog();
 
 const AdminStore = {
+  /* name kept for compatibility with existing views; values now come from SiteSettings in MongoDB */
   getSettings(){
+    const s = (CATALOG && CATALOG.settings) || {};
     return {
-      siteName: "Adil Furnitures",
-      phone: "+91 99593 34110",
-      email: "hello@prabot.example",
-      address: "Hyderabad, Telangana",
-      freeShipThreshold: 25000,
-      shipCost: 1499,
-      currency: "INR"
+      siteName: s.siteName || "Adil Furnitures",
+      phone: s.businessPhone || "+91 99593 34110",
+      email: s.businessEmail || "hello@adilfurnitures.com",
+      address: s.businessAddress || "Hyderabad, Telangana",
+      freeShipThreshold: s.freeShipThreshold ?? 25000,
+      shipCost: s.deliveryCharge ?? 1499,
+      installCharge: s.installationCharge ?? 0,
+      currency: s.currency || "INR",
+      whatsappNumber: s.whatsappNumber || "",
+      popup: s.popup || {}, bulk: s.bulk || {}, social: s.social || {}, footerText: s.footerText || "", home: s.home || {}
     };
   },
-  getHome(){ return {}; },
-  getOverrides(){ return SITE_DATA.overrides || {}; },
-  getDeleted(){ return SITE_DATA.deleted || []; },
-  getCatOverrides(){ return {}; },
-  getCatDeleted(){ return []; }
+  getHome(){ const h = this.getSettings().home; const o = {};
+    if(h.heroTitle) o.hero = { heading: h.heroTitle };
+    return o; },
+  getOverrides(){ return {}; }, getDeleted(){ return []; }, getCatOverrides(){ return {}; }, getCatDeleted(){ return []; }
 };
 
+function withDefaults(p){ return Object.assign({ stockStatus:"IN_STOCK", stock:99, discount:0, compareAtPrice:0, images:[], tags:[], sku:"" }, p); }
 function allProducts(){
-  const overrides = AdminStore.getOverrides();
-  const deleted = new Set(AdminStore.getDeleted());
-  const merged = PRODUCTS.filter(p=>!deleted.has(p.id)).map(p=> overrides[p.id] ? overrides[p.id] : p);
-  // add admin-created products not present in base list
-  Object.keys(overrides).forEach(id=>{
-    if(!PRODUCTS.some(p=>p.id===id)) merged.push(overrides[id]);
-  });
-  return merged;
+  if(CATALOG) return CATALOG.products;
+  return PRODUCTS.map(withDefaults);          // offline fallback only
 }
 function allCategoryLabels(){
+  if(CATALOG) return Object.fromEntries(CATALOG.groups.map(g=>[g.slug, g.name]));
   return Object.assign({}, BASE_CATEGORY_LABELS);
 }
-
-/* All product categories (e.g. "Office Chair"), merging admin-created/edited ones over the base list.
-   Groups themselves (office, gaming, ...) are fixed — see FIXED_GROUPS — and never editable here. */
+/* Product categories (e.g. "Office Chair"); groups (office, gaming, ...) are the top-level categories */
 function allCategories(){
-  const overrides = AdminStore.getCatOverrides();
-  const deleted = new Set(AdminStore.getCatDeleted());
-  const merged = BASE_CATEGORIES.filter(c=>!deleted.has(c.id)).map(c=> overrides[c.id] ? overrides[c.id] : c);
-  Object.keys(overrides).forEach(id=>{
-    if(!BASE_CATEGORIES.some(c=>c.id===id)) merged.push(overrides[id]);
-  });
-  return merged;
+  if(CATALOG) return CATALOG.categories.map(c=>({id:c.id, name:c.name, group:c.group}));
+  return BASE_CATEGORIES;
 }
 function categoriesByGroup(group){
   return allCategories().filter(c=>c.group===group);
+}
+const isOut = p => !!p && p.stockStatus === "OUT_OF_STOCK";
+/* responsive Cloudinary images: srcset built from the small/regular variants the server provides */
+function imgAttrs(p, sizes){
+  if(!p.imgSmall || p.imgSmall === p.img) return `src="${p.img}"`;
+  return `src="${p.img}" srcset="${p.imgSmall} 400w, ${p.img} 800w" sizes="${sizes||"(max-width:640px) 50vw, 25vw"}"`;
 }
 
 function formatINR(n){ return "₹" + n.toLocaleString("en-IN"); }
@@ -246,10 +253,21 @@ const Store = {
   read(k){ try{ return JSON.parse(localStorage.getItem(k)) || (k===this.cartKey?{}:[]); }catch(e){ return k===this.cartKey?{}:[]; } },
   write(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
   getCart(){ return this.read(this.cartKey); },
-  setCart(c){ this.write(this.cartKey,c); syncBadges(); },
-  addToCart(id,qty){ const c=this.getCart(); c[id]=(c[id]||0)+(qty||1); this.setCart(c); },
+  setCart(c){ this.write(this.cartKey,c); syncBadges(); if(typeof Track!=="undefined") Track.syncCart(); },
+  /* returns false when the product can't be bought (out of stock) */
+  addToCart(id,qty){
+    const p = findProduct(id);
+    if(p && isOut(p)){ if(typeof showToast==="function") showToast("Sorry, this item is out of stock"); return false; }
+    const c=this.getCart(); c[id]=(c[id]||0)+(qty||1); this.setCart(c);
+    if(typeof Track!=="undefined") Track.event("CART_ADD",{productId:id});
+    return true;
+  },
   setQty(id,q){ const c=this.getCart(); if(q<=0) delete c[id]; else c[id]=q; this.setCart(c); },
-  removeFromCart(id){ const c=this.getCart(); delete c[id]; this.setCart(c); },
+  removeFromCart(id){ const c=this.getCart(); delete c[id]; this.setCart(c); if(typeof Track!=="undefined") Track.event("CART_REMOVE",{productId:id}); },
+  /* drop items the admin archived / that went out of stock since they were added */
+  pruneCart(){ if(!CATALOG) return; const c=this.getCart(); let ch=false;
+    Object.keys(c).forEach(id=>{ const p=findProduct(id); if(!p){ delete c[id]; ch=true; } });
+    if(ch) this.setCart(c); },
   cartCount(){ return Object.values(this.getCart()).reduce((a,b)=>a+b,0); },
   cartTotal(){ return Object.entries(this.getCart()).reduce((sum,[id,q])=>{ const p=findProduct(id); return sum + (p? p.price*q : 0); },0); },
   getWish(){ return this.read(this.wishKey); },
