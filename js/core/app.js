@@ -55,6 +55,7 @@ function render(){
     case "product": html = viewProduct(id); after = ()=>afterProduct(id); break;
     case "cart": html = viewCart(); after = afterCart; break;
     case "checkout": html = viewCheckout(); after = afterCheckout; break;
+    case "bulk": html = viewBulk(); after = afterBulk; break;
     case "wishlist": html = viewWishlist(); break;
     case "about": html = viewAbout(); break;
     case "contact": html = viewContact(); after = afterContact; break;
@@ -69,6 +70,7 @@ function render(){
   setupReveals();
   syncHeaderHeight();
   window.scrollTo(0,0);
+  if(typeof Track!=="undefined") Track.onRoute(route, id, params);
 }
 
 /* ---- Keep --header-total in sync with the real rendered header ----
@@ -92,3 +94,4 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncHeaderH
 window.addEventListener("hashchange", render);
 render();
 syncHeaderHeight();
+Track.init();      /* start visitor tracking after every script is loaded */
