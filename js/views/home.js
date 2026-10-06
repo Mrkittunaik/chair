@@ -78,6 +78,8 @@ function viewHome(){
     {key:"decor",label:"Decor",img:IMG.decor1}
   ];
   const cats = allCategoryLabels();
+  /* categories created in Admin appear automatically (image = first product in that category) */
+  Object.keys(cats).forEach(k=>{ if(!categories.some(c=>c.key===k)){ const pr = allProducts().find(x=>x.group===k); categories.push({key:k,label:cats[k],img:pr?pr.img:""}); } });
   const collections = H.collections;
   return `
   ${H.hero.visible ? `
