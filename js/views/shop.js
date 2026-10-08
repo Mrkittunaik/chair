@@ -5,7 +5,7 @@ function viewShop(params){
   return `
   <section class="page-head">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / Shop</p>
+      <p class="breadcrumb"><a href="/">Home</a> / Shop</p>
       <h1 class="page-title" id="shopTitle">${title}</h1>
       <p class="page-desc" id="shopDesc">Filter by room, price and material. ${allProducts().length} pieces in the catalogue.</p>
     </div>
@@ -111,7 +111,7 @@ function afterShop(params){
     groupStagger(); setupReveals();
     const ri = document.getElementById("resetInline");
     if(ri) ri.addEventListener("click", reset);
-    history.replaceState(null,"", "#/shop" + (cat? "?cat="+cat : ""));
+    history.replaceState(null,"", "/shop" + (cat? "?cat="+cat : "")); if(window.SeoLib) seoRefresh();
   }
   function reset(){
     document.querySelector("input[name=cat][value='']").checked = true;
