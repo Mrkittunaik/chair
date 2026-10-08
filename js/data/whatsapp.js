@@ -4,7 +4,7 @@
 let WA_NUMBER = "919959334110";          // +91 99593 34110 (digits only, with country code)
 let WA_DISPLAY = "+91 99593 34110";
 let WA_BRAND = "Adil Furnitures";
-const SITE_URL = "";                        // set to the live domain, e.g. "https://adilfurnitures.com" (blank = current address)
+const SITE_URL = "https://adilfurnitures.com";                        // set to the live domain, e.g. "https://adilfurnitures.com" (blank = current address)
 
 /* number / brand come from Admin > Settings (SiteSettings.whatsappNumber) once the catalogue has loaded */
 function waSync(){
@@ -17,7 +17,7 @@ function siteBase(){
   if(SITE_URL) return SITE_URL.replace(/\/+$/, "") + "/";
   return location.origin + location.pathname;
 }
-function productUrl(p){ return siteBase() + "#/product/" + p.id; }
+function productUrl(p){ return siteBase().replace(/\/$/,"") + productPath(p); }
 function waLink(text){ return "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(text); }
 /* Tracks the click first (keepalive request, not awaited so the popup isn't blocked), then opens WhatsApp. */
 function waOpenUrl(url, kind, pid){
