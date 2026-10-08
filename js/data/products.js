@@ -46,7 +46,7 @@ const IMG = {
 
 // Fallback placeholder (inline SVG data URI) used onerror
 const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'><rect width='100%' height='100%' fill='#EFEFEC'/><text x='50%' y='50%' font-family='sans-serif' font-size='28' fill='#B5B5AF' text-anchor='middle' dominant-baseline='middle'>PRABOT.</text></svg>`
+  `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'><rect width='100%' height='100%' fill='#EFEFEC'/><text x='50%' y='50%' font-family='sans-serif' font-size='28' fill='#B5B5AF' text-anchor='middle' dominant-baseline='middle'>ADIL FURNITURES</text></svg>`
 );
 
 const PRODUCTS = [
@@ -163,7 +163,7 @@ async function loadCatalog(){
     if(typeof waSync === "function") waSync();
     if(typeof Store !== "undefined") Store.pruneCart();
     if(typeof Popup !== "undefined") Popup.schedule();
-    if(changed && typeof render === "function" && !/^#\/(checkout|bulk)/.test(location.hash)) render();
+    if(changed && typeof render === "function" && !/^\/(checkout|bulk)/.test(location.pathname)) render();
   }catch(e){}
 }
 /* live updates: cheap version poll (tab visible only). A changed version re-fetches the catalogue. */
@@ -220,6 +220,21 @@ function imgAttrs(p, sizes){
   return `src="${p.img}" srcset="${p.imgSmall} 400w, ${p.img} 800w" sizes="${sizes||"(max-width:640px) 50vw, 25vw"}"`;
 }
 
+/* URL helpers - keep in sync with seo/lib.js (productPath / slugify) */
+function slugifyName(s){ return String(s||"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,70); }
+function productPath(p){ return "/product/" + (slugifyName(p.slug||p.name)||"item") + "-" + p.id; }
+function productFromPath(seg){
+  seg = String(seg||"").toLowerCase();
+  return allProducts().find(p=>productPath(p).toLowerCase()==="/product/"+seg)
+      || allProducts().find(p=>{ const id=String(p.id).toLowerCase(); return seg===id || seg.endsWith("-"+id); });
+}
+function groupHref(g){ return g==="office" ? "/office-furniture" : "/shop?cat="+encodeURIComponent(g); }
+function pageKey(){ return "#" + location.pathname + location.search; }   /* same shape the analytics backend already stores */
+function navigate(path, replace){
+  if(location.pathname+location.search === path) { render(); return; }
+  history[replace?"replaceState":"pushState"](null,"",path); render();
+}
+
 function formatINR(n){ return "₹" + n.toLocaleString("en-IN"); }
 
 /* ---------------- Illustrated placeholders (never a broken image) ---------------- */
@@ -240,7 +255,7 @@ function placeholderFor(kind){
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800' width='800' height='800'>`+
     `<rect width='800' height='800' fill='#E4E1D8'/>`+
     `<g fill='none' stroke='#9BA79A' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'>${art}</g>`+
-    `<text x='400' y='690' font-family='Georgia,serif' font-size='30' fill='#9BA79A' text-anchor='middle'>PRABOT.</text></svg>`;
+    `<text x='400' y='690' font-family='Georgia,serif' font-size='30' fill='#9BA79A' text-anchor='middle'>ADIL FURNITURES</text></svg>`;
   return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
 }
 function fb(kind){
