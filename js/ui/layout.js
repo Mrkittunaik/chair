@@ -3,7 +3,7 @@ function renderHeader(active, query){
   document.getElementById("headerRoot").innerHTML = `
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo.png" alt="Adil Furnitures"></a>
+      <a href="/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo.png" alt="Adil Furnitures"></a>
       <nav class="main-nav" id="mainNav">
         ${NAV.map(n=> n.wa
           ? `<a href="${waLink(n.wa==='bulk'?waBulkMsg():waCustomMsg())}" data-wa="${n.wa}" class="nav-wa-link" target="_blank" rel="noopener">${n.label}</a>`
@@ -14,13 +14,13 @@ function renderHeader(active, query){
       <div class="nav-backdrop" id="navBackdrop"></div>
       <form class="header-search" id="headerSearchForm" role="search">
         <span class="s-icon">${ICONS.search}</span>
-        <input type="search" id="headerSearchInput" value="${escapeHtml(q)}" placeholder="Search sofas, desks, beds…" aria-label="Search furniture">
+        <input type="search" id="headerSearchInput" value="${escapeHtml(q)}" placeholder="Search chairs, tables, desks…" aria-label="Search furniture">
       </form>
       <div class="header-actions">
         <a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" class="wa-head" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">${WA_ICON}<span>WhatsApp</span></a>
         <div class="icon-group">
-          <a href="#/wishlist" class="icon-btn" aria-label="Wishlist">${ICONS.heart}<span class="badge" id="wishBadge" hidden>0</span></a>
-          <a href="#/cart" class="icon-btn" aria-label="Cart">${ICONS.bag}<span class="badge" id="cartBadge" hidden>0</span></a>
+          <a href="/wishlist" class="icon-btn" aria-label="Wishlist">${ICONS.heart}<span class="badge" id="wishBadge" hidden>0</span></a>
+          <a href="/cart" class="icon-btn" aria-label="Cart">${ICONS.bag}<span class="badge" id="cartBadge" hidden>0</span></a>
         </div>
         <button class="icon-btn menu-toggle" id="menuToggle" aria-label="Menu" aria-expanded="false">${ICONS.menu}</button>
       </div>
@@ -65,52 +65,79 @@ function renderHeader(active, query){
     form.addEventListener("submit", e=>{
       e.preventDefault();
       const val = form.querySelector("input").value.trim();
-      location.hash = "#/search" + (val ? "?q="+encodeURIComponent(val) : "");
+      navigate("/search" + (val ? "?q="+encodeURIComponent(val) : ""));
     });
   });
   syncBadges();
 }
 
+function footerSocial(){
+  const st = AdminStore.getSettings(), L = window.SeoLib;
+  const merged = Object.assign({}, L ? L.SITE.social : {}, Object.fromEntries(Object.entries(st.social||{}).filter(([,v])=>/^https:\/\//.test(v||""))));
+  const names = { instagram:"Instagram", facebook:"Facebook", youtube:"YouTube", linkedin:"LinkedIn" };
+  return Object.keys(names).filter(k=>/^https:\/\//.test(merged[k]||"")).map(k=>`<li><a href="${escapeHtml(merged[k])}" target="_blank" rel="noopener me">${names[k]}</a></li>`).join("");
+}
+function footerMaps(){
+  const st = AdminStore.getSettings(), L = window.SeoLib;
+  const u = (st.mapsUrl && /^https:\/\//.test(st.mapsUrl) ? st.mapsUrl : "") || (L ? L.SITE.mapsUrl : "");
+  return /^https:\/\//.test(u||"") ? `<li><a href="${escapeHtml(u)}" target="_blank" rel="noopener">View on Google Maps</a></li>` : "";
+}
 function renderFooter(){
+  const st = AdminStore.getSettings(), social = footerSocial();
   document.getElementById("footerRoot").innerHTML = `
   <footer class="site-footer">
     <div class="container" style="padding:0;">
-      <div class="footer-grid">
+      <div class="footer-grid footer-grid-5">
         <div>
-          <a href="#/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo-light.png" alt="Adil Furnitures"></a>
-          <p>Furniture made for the way people actually live and work — comfortable, durable, and built to be used every day.</p>
+          <a href="/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="/assets/collections/logo/adil-furnitures-logo-light.png" alt="Adil Furnitures" width="160" height="48"></a>
+          <p>Quality office, school and college furniture at competitive prices. Custom chairs and tables. Based in Hyderabad, serving customers across India.</p>
+          <p style="margin-top:10px;">${escapeHtml(st.address)}</p>
+          <p style="margin-top:10px;"><a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" target="_blank" rel="noopener" style="font-weight:700;">WhatsApp: ${WA_DISPLAY}</a></p>
         </div>
         <div>
-          <h4>Shop</h4>
+          <h4>Office furniture</h4>
           <ul>
-            <li><a href="#/shop">All furniture</a></li>
-            ${Object.entries(allCategoryLabels()).slice(0,5).map(([k,v])=>`<li><a href="#/shop?cat=${k}">${escapeHtml(v)}</a></li>`).join("")}
-            <li><a href="#/bulk">Office bulk enquiry</a></li>
+            <li><a href="/office-furniture">Office furniture</a></li>
+            <li><a href="/office-chairs">Office chairs</a></li>
+            <li><a href="/ergonomic-chairs">Ergonomic chairs</a></li>
+            <li><a href="/executive-chairs">Executive chairs</a></li>
+            <li><a href="/office-tables">Office tables</a></li>
           </ul>
         </div>
         <div>
-          <h4>Company</h4>
+          <h4>Custom &amp; institutional</h4>
           <ul>
-            <li><a href="#/about">About us</a></li>
-            <li><a href="#/contact">Contact</a></li>
-            <li><a href="#/search">Search</a></li>
-            <li><a href="#/wishlist">Wishlist</a></li>
-            <li><a href="#/cart">Cart</a></li>
+            <li><a href="/custom-office-furniture">Custom furniture</a></li>
+            <li><a href="/school-furniture">School furniture</a></li>
+            <li><a href="/college-furniture">College furniture</a></li>
+            <li><a href="/institutional-furniture">Institutional furniture</a></li>
+            <li><a href="/bulk-furniture-orders">Bulk orders</a></li>
           </ul>
         </div>
         <div>
-          <h4>Get delivery updates and new arrivals</h4>
-          <form class="news-row" id="newsForm">
-            <input type="email" placeholder="you@email.com" aria-label="Email address" required>
-            <button class="btn btn-sm" type="submit">Subscribe</button>
-          </form>
-          <p style="margin-top:10px;">One email a month. Unsubscribe anytime.</p>
-          <p style="margin-top:14px;"><a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" target="_blank" rel="noopener" style="font-weight:700;">WhatsApp us: ${WA_DISPLAY}</a></p>
+          <h4>Locations</h4>
+          <ul>
+            <li><a href="/office-furniture-hyderabad">Office furniture in Hyderabad</a></li>
+            <li><a href="/india-delivery">Delivery across India</a></li>
+            ${footerMaps()}
+          </ul>
+          <h4 style="margin-top:18px;">Company</h4>
+          <ul>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+            <li><a href="/guides">Buying guides</a></li>
+            <li><a href="/shop">Shop all</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Get a quote</h4>
+          <p><a href="/bulk-furniture-orders" class="btn btn-primary btn-sm">Request a Quote</a></p>
+          ${social ? `<h4 style="margin-top:18px;">Follow us</h4><ul>${social}</ul>` : ""}
         </div>
       </div>
       <div class="footer-base">
-        <span>© ${new Date().getFullYear()} ${escapeHtml(AdminStore.getSettings().siteName)}${AdminStore.getSettings().footerText?" · "+escapeHtml(AdminStore.getSettings().footerText):""}</span>
-        <span>Free delivery and installation on orders above ${formatINR(AdminStore.getSettings().freeShipThreshold)}</span>
+        <span>© ${new Date().getFullYear()} ${escapeHtml(st.siteName)}${st.footerText?" · "+escapeHtml(st.footerText):""}</span>
+        <span class="footer-legal"><a href="/shipping-delivery">Shipping &amp; Delivery</a> · <a href="/privacy-policy">Privacy Policy</a> · <a href="/terms">Terms</a></span>
       </div>
     </div>
   </footer>`;
@@ -123,9 +150,6 @@ function renderFooter(){
     f.innerHTML = WA_ICON;
     document.body.appendChild(f);
   }
-  document.getElementById("newsForm").addEventListener("submit", e=>{
-    e.preventDefault(); e.target.reset(); showToast("Subscribed");
-  });
 }
 
 function syncBadges(){
@@ -159,13 +183,13 @@ function productCardHTML(p){
   return `
   <article class="product-card${out?" is-out":""}">
     <div class="pc-media img-wrap shimmer">
-      <a href="#/product/${p.id}"><img ${imgAttrs(p)} ${fb(p.group)} alt="${escapeHtml(p.name)}" loading="lazy" decoding="async"></a>
+      <a href="${productPath(p)}"><img ${imgAttrs(p)} ${fb(p.group)} alt="${escapeHtml(p.name)}" loading="lazy" decoding="async"></a>
       ${stockBadge(p)}${p.discount>0 && !out ? `<span class="badge-off">-${p.discount}%</span>` : ""}
       <button class="pc-wish ${wished?'on':''}" data-wish="${p.id}" aria-label="${wished?'Remove from wishlist':'Save to wishlist'}">${wished?ICONS.heartFill:ICONS.heart}</button>
     </div>
     <div class="pc-body">
       <div class="pc-cat">${p.category}</div>
-      <a href="#/product/${p.id}" class="pc-name">${escapeHtml(p.name)}</a>
+      <a href="${productPath(p)}" class="pc-name">${escapeHtml(p.name)}</a>
       <div class="pc-meta">
         <span>${priceHTML(p)}</span>
         <span class="pc-rating">${ICONS.star}${p.rating}</span>
