@@ -10,42 +10,37 @@ const HERO_SLIDES = [
 function defaultHomeContent(){
   return {
     hero: {
-      kicker: "New for 2026",
-      heading: "Furniture you will still like in ten years.",
-      lead: "Solid wood, honest upholstery, and joinery that holds. Made for homes and workspaces in India, delivered and installed by our own team.",
-      btn1Text: "Shop all furniture", btn1Link: "#/shop",
-      btn2Text: "Search the catalogue", btn2Link: "#/search",
-      mark1Num: "42", mark1Label: "pieces in stock",
-      mark2Num: "10 yrs", mark2Label: "of workshop craft",
-      mark3Num: "Free", mark3Label: "install above ₹25,000",
-      img: IMG.livingRoomHero, alt: "Living room with a fabric sofa, lounge chair and low coffee table",
+      kicker: "Quality furniture at competitive prices",
+      heading: "Custom Office Chairs & Furniture for Offices, Schools & Colleges Across India",
+      lead: "Office chairs, tables and workstations, with customisation for size, colour and material. Based in Hyderabad, serving customers across India.",
+      btn1Text: "Office furniture", btn1Link: "/office-furniture",
+      btn2Text: "Request a quote", btn2Link: "/bulk-furniture-orders",
+      img: IMG.livingRoomHero, alt: "Office chairs and tables in a modern workspace",
       visible: true
     },
-    catRail: { title: "Shop by room", visible: true },
-    collectionsSection: { title: "Collections", sub: "Pieces grouped the way rooms actually come together.", visible: true },
+    catRail: { title: "Shop by category", visible: true },
+    collectionsSection: { title: "Desks and workstations", sub: "Layouts for executive cabins, study corners, open offices and growing teams.", visible: true },
     collections: [
-      {title:"Executive desks for corner offices",label:"Executive",img:"assets/collections/office-desk.png",href:"#/shop?cat=office"},
-      {title:"Compact desks for home study corners",label:"Study",img:"assets/collections/study-desk.png",href:"#/shop?cat=office"},
-      {title:"Height-adjustable desks for open floors",label:"Open office",img:"assets/collections/open-office-teal.png",href:"#/shop?cat=office"},
-      {title:"Modular benching for growing teams",label:"Team desks",img:"assets/collections/open-office-mint.png",href:"#/shop?cat=office"},
-      {title:"Collaborative workstations with storage",label:"Workstations",img:"assets/collections/collab-desks-green.png",href:"#/shop?cat=office"},
-      {title:"Cluster desks built for busy floors",label:"Clusters",img:"assets/collections/workstation-cluster.png",href:"#/shop?cat=office"}
+      {title:"Executive desks for corner offices",label:"Executive",img:"/assets/collections/executive-office-desk-india.webp",href:"/office-tables"},
+      {title:"Compact desks for home study corners",label:"Study",img:"/assets/collections/study-desk-for-home-office-india.webp",href:"/office-tables"},
+      {title:"Height-adjustable desks for open floors",label:"Open office",img:"/assets/collections/open-office-workstations-india.webp",href:"/office-tables"},
+      {title:"Modular benching for growing teams",label:"Team desks",img:"/assets/collections/modular-team-desks-office-india.webp",href:"/custom-office-tables"},
+      {title:"Collaborative workstations with storage",label:"Workstations",img:"/assets/collections/collaborative-office-workstations-india.webp",href:"/office-tables"},
+      {title:"Cluster desks built for busy floors",label:"Clusters",img:"/assets/collections/cluster-workstation-desks-india.webp",href:"/bulk-furniture-orders"}
     ],
-    featured1: { group: "office", title: "Office", sub: "Chairs, desks and storage for focused work.", visible: true },
+    featured1: { group: "office", title: "Office furniture", sub: "Chairs, desks and storage for focused work.", visible: true },
     featured2: { group: "gaming", title: "Gaming", sub: "Desks and seating that survive long sessions.", visible: true },
     about: {
-      heading: "Built in our own workshop, not bought off a container.",
-      body: "Every frame is cut, joined and finished by a team we know by name. If something loosens in the first five years, we come and fix it.",
-      img: IMG.aboutBanner, alt: "Workshop bench with tools and timber",
-      stat1Num: "10+", stat1Label: "Years of craft",
-      stat2Num: "800+", stat2Label: "Homes furnished",
-      stat3Num: "5 yr", stat3Label: "Frame warranty",
+      heading: "Furniture for offices, schools and colleges.",
+      body: "We supply office chairs, tables and institutional furniture at competitive prices, and take custom requirements for size, colour and material. Send us your list and we will quote.",
+      img: IMG.aboutBanner, alt: "Furniture being finished in a workshop",
+      stat1Num: "", stat1Label: "", stat2Num: "", stat2Label: "", stat3Num: "", stat3Label: "",
       visible: true
     },
     promo: {
       heading: "Not sure where to start?",
-      body: "Tell us the room, the size and the budget. We will send back three options and a delivery date.",
-      btnText: "Ask for a plan", btnLink: "#/contact",
+      body: "Tell us what you need, the quantity and your budget, and we will send a quote.",
+      btnText: "Request a quote", btnLink: "/bulk-furniture-orders",
       img: IMG.bannerSofa, alt: "Sofa and lounge chair in a bright room",
       visible: true
     },
@@ -91,9 +86,10 @@ function viewHome(){
       </div>
       <div class="hero-card-content">
         <h1 class="hero-card-title">${escapeHtml(H.hero.heading)}</h1>
+        <p class="hero-card-lead">${escapeHtml(H.hero.lead)}</p>
         <div class="hero-card-actions">
-          <a href="${H.hero.btn1Link}" class="btn-pill btn-pill-ghost">Services</a>
-          <a href="${H.hero.btn2Link}" class="btn-pill btn-pill-solid">Enquiry</a>
+          <a href="${H.hero.btn1Link}" class="btn-pill btn-pill-ghost">${escapeHtml(H.hero.btn1Text)}</a>
+          <a href="${H.hero.btn2Link}" class="btn-pill btn-pill-solid">${escapeHtml(H.hero.btn2Text)}</a>
         </div>
       </div>
     </div>
@@ -102,10 +98,10 @@ function viewHome(){
   ${H.catRail.visible ? `
   <section class="section">
     <div class="container">
-      <div class="section-head"><h2>${escapeHtml(H.catRail.title)}</h2><a href="#/shop" class="view-all">See everything</a></div>
+      <div class="section-head"><h2>${escapeHtml(H.catRail.title)}</h2><a href="/shop" class="view-all">See everything</a></div>
       <div class="cat-rail">
         ${categories.filter(c=>cats[c.key]).map(c=>`
-          <a href="#/shop?cat=${c.key}" class="cat-card">
+          <a href="${groupHref(c.key)}" class="cat-card">
             <div class="cat-img img-wrap shimmer">
               <img src="${c.img}" ${fb(c.key)} alt="${c.label}" loading="lazy">
               <div class="cat-name">${cats[c.key]}</div>
@@ -132,7 +128,7 @@ function viewHome(){
   ${H.featured1.visible ? `
   <section class="section section-tight">
     <div class="container">
-      <div class="section-head"><div><h2>${escapeHtml(H.featured1.title)}</h2><p class="section-sub">${escapeHtml(H.featured1.sub)}</p></div><a href="#/shop?cat=${H.featured1.group}" class="view-all">View all</a></div>
+      <div class="section-head"><div><h2>${escapeHtml(H.featured1.title)}</h2><p class="section-sub">${escapeHtml(H.featured1.sub)}</p></div><a href="${groupHref(H.featured1.group)}" class="view-all">View all</a></div>
       <div class="product-grid" id="featuredPreview1"></div>
     </div>
   </section>` : ""}
@@ -140,7 +136,7 @@ function viewHome(){
   ${H.featured2.visible ? `
   <section class="section section-tight">
     <div class="container">
-      <div class="section-head"><div><h2>${escapeHtml(H.featured2.title)}</h2><p class="section-sub">${escapeHtml(H.featured2.sub)}</p></div><a href="#/shop?cat=${H.featured2.group}" class="view-all">View all</a></div>
+      <div class="section-head"><div><h2>${escapeHtml(H.featured2.title)}</h2><p class="section-sub">${escapeHtml(H.featured2.sub)}</p></div><a href="${groupHref(H.featured2.group)}" class="view-all">View all</a></div>
       <div class="product-grid" id="featuredPreview2"></div>
     </div>
   </section>` : ""}
@@ -152,11 +148,6 @@ function viewHome(){
       <div>
         <h2>${escapeHtml(H.about.heading)}</h2>
         <p>${escapeHtml(H.about.body)}</p>
-        <div class="stat-row">
-          <div class="stat"><div class="num">${escapeHtml(H.about.stat1Num)}</div><div class="lbl">${escapeHtml(H.about.stat1Label)}</div></div>
-          <div class="stat"><div class="num">${escapeHtml(H.about.stat2Num)}</div><div class="lbl">${escapeHtml(H.about.stat2Label)}</div></div>
-          <div class="stat"><div class="num">${escapeHtml(H.about.stat3Num)}</div><div class="lbl">${escapeHtml(H.about.stat3Label)}</div></div>
-        </div>
       </div>
     </div>
   </section>` : ""}
@@ -175,15 +166,22 @@ function viewHome(){
     </div>
   </section>` : ""}
 
+  <section class="section section-tight seo-content" id="seoHome"></section>
+
   ${H.newArrivals.visible ? `
   <section class="section">
     <div class="container">
-      <div class="section-head"><h2>${escapeHtml(H.newArrivals.title)}</h2><a href="#/shop?sort=newest" class="view-all">View all</a></div>
+      <div class="section-head"><h2>${escapeHtml(H.newArrivals.title)}</h2><a href="/shop?sort=newest" class="view-all">View all</a></div>
       <div class="product-grid" id="newArrivals"></div>
     </div>
   </section>` : ""}`;
 }
 function afterHome(){
+  seoLoad().then(L=>{
+    const el = document.getElementById("seoHome"); if(!el || !L) return;
+    const ctx = seoCtx(), pg = L.PAGES["/"];
+    el.innerHTML = `<div class="container">${L.sectionsHTML(pg, ctx)}</div><div class="container seo-faq"><div class="section-head"><h2>Frequently asked questions</h2></div>${pg.faqs.map(f=>`<details><summary>${escapeHtml(f.q)}</summary><p>${escapeHtml(f.a)}</p></details>`).join("")}</div>`;
+  });
   const slides = document.querySelectorAll(".hero-slide");
   if(slides.length){
     let idx = 0;
