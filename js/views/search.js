@@ -37,7 +37,7 @@ function viewSearch(params){
   return `
   <section class="search-hero">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / Search</p>
+      <p class="breadcrumb"><a href="/">Home</a> / Search</p>
       <h1 class="page-title">Search the catalogue</h1>
       <form class="search-form" id="pageSearchForm" role="search">
         <input type="search" id="pageSearchInput" value="${escapeHtml(q)}" placeholder="Try “leather chair”, “oak dining table”, “RGB desk”" aria-label="Search furniture" autocomplete="off">
@@ -94,7 +94,7 @@ function afterSearch(params){
         <div class="empty-state">
           <h3>Start with a word or two</h3>
           <p>Search by product name, room, material or colour. Everything stays on this page — results appear right below.</p>
-          <a href="#/shop" class="btn btn-secondary">Browse all furniture</a>
+          <a href="/shop" class="btn btn-secondary">Browse all furniture</a>
         </div>
         <div class="section-head" style="margin-top:48px;"><h2>Most loved right now</h2></div>
         <div class="product-grid">${sortList(allProducts(),"rating").slice(0,8).map(productCardHTML).join("")}</div>`;
@@ -107,7 +107,7 @@ function afterSearch(params){
         <div class="empty-state">
           <h3>No matches for “${escapeHtml(input.value.trim())}”</h3>
           <p>Check the spelling, use a shorter word, or search by room — like “office”, “bedroom” or “outdoor”.</p>
-          <a href="#/shop" class="btn btn-primary">Browse all furniture</a>
+          <a href="/shop" class="btn btn-primary">Browse all furniture</a>
         </div>`;
       return;
     }
@@ -132,7 +132,7 @@ function afterSearch(params){
     if(v) parts.push("q="+encodeURIComponent(v));
     if(group!=="all") parts.push("cat="+group);
     if(sortSel.value!=="relevance") parts.push("sort="+sortSel.value);
-    history.replaceState(null,"", "#/search" + (parts.length? "?"+parts.join("&") : ""));
+    history.replaceState(null,"", "/search" + (parts.length? "?"+parts.join("&") : ""));
   }
 
   let t;
