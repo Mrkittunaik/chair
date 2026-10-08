@@ -7,7 +7,7 @@ function viewCart(){
   return `
   <section class="page-head">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / Cart</p>
+      <p class="breadcrumb"><a href="/">Home</a> / Cart</p>
       <h1 class="page-title">Your cart</h1>
     </div>
   </section>
@@ -19,7 +19,7 @@ function afterCart(){
     const cart = Store.getCart();
     const ids = Object.keys(cart);
     if(!ids.length){
-      area.innerHTML = `<div class="empty-state"><h3>Your cart is empty</h3><p>Add a piece from the catalogue and it will show up here with delivery and total.</p><a href="#/shop" class="btn btn-primary">Browse furniture</a></div>`;
+      area.innerHTML = `<div class="empty-state"><h3>Your cart is empty</h3><p>Add a piece from the catalogue and it will show up here with delivery and total.</p><a href="/shop" class="btn btn-primary">Browse furniture</a></div>`;
       return;
     }
     const sub = Store.cartTotal();
@@ -32,9 +32,9 @@ function afterCart(){
             const p = findProduct(id); if(!p) return "";
             return `
             <div class="cart-row">
-              <a href="#/product/${p.id}"><img src="${p.img}" ${fb(p.group)} alt="${escapeHtml(p.name)}"></a>
+              <a href="${productPath(p)}"><img src="${p.img}" ${fb(p.group)} alt="${escapeHtml(p.name)}"></a>
               <div>
-                <a href="#/product/${p.id}" class="nm">${escapeHtml(p.name)}</a>
+                <a href="${productPath(p)}" class="nm">${escapeHtml(p.name)}</a>
                 <div class="ct">${p.category} · ${p.color}</div>
                 ${isOut(p)?`<div class="stock-note out" style="margin-top:6px;">Out of stock — remove it to continue</div>`:""}
                 <div class="qty" style="margin-top:10px;">
@@ -53,9 +53,9 @@ function afterCart(){
           <div class="sum-row"><span>Subtotal</span><span>${formatINR(sub)}</span></div>
           <div class="sum-row"><span>Delivery and install</span><span>${ship? formatINR(ship) : "Free"}</span></div>
           <div class="sum-total"><span>Total</span><span>${formatINR(sub+ship)}</span></div>
-          <a href="#/checkout" class="btn btn-wa btn-block" style="margin-top:18px;" id="checkout">${WA_ICON}<span>Checkout</span></a>
+          <a href="/checkout" class="btn btn-wa btn-block" style="margin-top:18px;" id="checkout">${WA_ICON}<span>Checkout</span></a>
           <a href="#" class="btn btn-ghost btn-block" style="margin-top:10px;" data-wa="bulk">Need bulk quantity? Ask on WhatsApp</a>
-          <a href="#/shop" class="btn btn-ghost btn-block" style="margin-top:10px;">Keep shopping</a>
+          <a href="/shop" class="btn btn-ghost btn-block" style="margin-top:10px;">Keep shopping</a>
           ${ship? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;">Add ${formatINR(settings.freeShipThreshold-sub)} more for free delivery.</p>`:""}
         </aside>
       </div>`;
@@ -73,7 +73,7 @@ function viewCheckout(){
   if(!ids.length){
     return `<section class="section"><div class="container"><div class="empty-state">
       <h3>Your cart is empty</h3><p>Add something before checking out.</p>
-      <a href="#/shop" class="btn btn-primary">Browse furniture</a></div></div></section>`;
+      <a href="/shop" class="btn btn-primary">Browse furniture</a></div></div></section>`;
   }
   const settings = AdminStore.getSettings();
   const sub = Store.cartTotal();
@@ -83,7 +83,7 @@ function viewCheckout(){
   return `
   <section class="page-head">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / <a href="#/cart">Cart</a> / Checkout</p>
+      <p class="breadcrumb"><a href="/">Home</a> / <a href="/cart">Cart</a> / Checkout</p>
       <h1 class="page-title">Checkout</h1>
       <p class="page-desc">Enter your delivery details. Your full order opens in WhatsApp, just tap Send.</p>
     </div>
@@ -139,7 +139,7 @@ function afterCheckout(){
     }
     Store.setCart({});
     try{ localStorage.removeItem("adil_draft"); }catch(err){}
-    location.hash = "#/shop";
+    navigate("/shop");
     waOpenUrl(url, "checkout");
   });
 }
