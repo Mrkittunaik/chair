@@ -3,7 +3,7 @@
 const BULK_KINDS = [
   { key:"Chairs", match:/chair/i }, { key:"Tables", match:/table/i }, { key:"Desks", match:/desk/i },
   { key:"Conference Tables", match:/conference/i }, { key:"Workstations", match:/workstation/i },
-  { key:"Storage", match:/storage|shelf|cabinet/i }, { key:"Other Office Furniture", match:null }
+  { key:"Storage", match:/storage|shelf|cabinet/i }, { key:"School Furniture", match:null }, { key:"College / Institutional Furniture", match:null }, { key:"Custom Furniture", match:null }, { key:"Other Office Furniture", match:null }
 ];
 let BULK_ROWS = [{ kind:"Chairs", product:"", qty:10, budgetMin:"", budgetMax:"" }];
 
@@ -46,10 +46,10 @@ function viewBulk(){
   return `
   <section class="bulk-hero">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / Office bulk enquiry</p>
-      <span class="lead-eyebrow">For offices, studios &amp; institutions</span>
-      <h1 class="page-title">Furnish Your Office at Better Bulk Prices</h1>
-      <p class="page-desc">Select the furniture you need and send your requirement to us.</p>
+      <p class="breadcrumb"><a href="/">Home</a> / Bulk orders</p>
+      <span class="lead-eyebrow">For offices, schools, colleges &amp; institutions</span>
+      <h1 class="page-title">Bulk Furniture Orders - Request a Quote</h1>
+      <p class="page-desc">Select the furniture you need, add any size, colour or material requirements in the notes, and send your requirement to us. Serving customers across India from Hyderabad.</p>
     </div>
   </section>
   <section class="section">
@@ -67,7 +67,7 @@ function viewBulk(){
           <div class="field"><label for="bkEmail">Email <span class="opt">(optional)</span></label><input id="bkEmail" type="email" autocomplete="email" value="${v("email")}"></div>
           <div class="field"><label for="bkCity">Delivery city</label><input id="bkCity" autocomplete="address-level2"></div>
         </div>
-        <div class="field"><label for="bkNotes">Notes <span class="opt">(optional)</span></label><textarea id="bkNotes" placeholder="Timeline, colours, branding, anything else…"></textarea></div>
+        <div class="field"><label for="bkNotes">Notes <span class="opt">(optional)</span></label><textarea id="bkNotes" placeholder="Customisation (size, colour, material), timeline, anything else…"></textarea></div>
         <p class="bulk-err" id="bkErr" role="alert" hidden></p>
         <button class="btn btn-wa btn-block" type="submit" id="bkSubmit">${WA_ICON}<span>Send Enquiry on WhatsApp</span></button>
         <p class="lead-fine">We save your enquiry first, then open WhatsApp with the details filled in. Tap Send there to confirm.</p>
@@ -141,7 +141,7 @@ function afterBulk(){
       ${id?`<p class="lead-sub">Your enquiry ID is <strong>${id}</strong>.</p>`:""}
       <p class="lead-sub">WhatsApp is opening with your requirement. Tap <strong>Send</strong> there to confirm.</p>
       <a class="btn btn-wa" href="${url}" target="_blank" rel="noopener">${WA_ICON}<span>Open WhatsApp again</span></a>
-      <a class="btn btn-ghost" href="#/shop" style="margin-left:8px;">Keep browsing</a></div>`;
+      <a class="btn btn-ghost" href="/shop" style="margin-left:8px;">Keep browsing</a></div>`;
     waOpenUrl(url, "bulk");
   });
 }
