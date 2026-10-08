@@ -25,12 +25,12 @@ const Track = (()=>{
     return API.whenReady().then(ok=> ok ? API.post(path, Object.assign({visitorId, sessionId:sessionId()}, body), Object.assign({retries:2, keepalive:true}, opt)) : null).catch(()=>null);
   }
   T.send = send;
-  T.event = (type, extra)=> send("/api/track/event", Object.assign({type, page: location.hash||"#/"}, extra));
+  T.event = (type, extra)=> send("/api/track/event", Object.assign({type, page: pageKey()}, extra));
 
   /* one dedupe window so catalogue-refresh re-renders don't double count */
   let lastKey="", lastAt=0;
   T.onRoute = (route, id, params)=>{
-    const key = location.hash||"#/";
+    const key = pageKey();
     if(key===lastKey && Date.now()-lastAt<5000) return;
     lastKey=key; lastAt=Date.now();
     T.event("PAGE_VIEW");
@@ -56,13 +56,13 @@ const Track = (()=>{
   T.draft = ()=>{ let d={}; try{ d=JSON.parse(localStorage.getItem("adil_draft")||"{}"); }catch(e){} return Object.assign({}, d, T.profile); };
 
   /* WhatsApp: fired (keepalive) right before the chat opens; never blocks the click */
-  T.wa = (kind, pid)=>{ send("/api/track/whatsapp",{kind:kind||"general", productId:pid||"", page:location.hash||"#/"}); };
+  T.wa = (kind, pid)=>{ send("/api/track/whatsapp",{kind:kind||"general", productId:pid||"", page:pageKey()}); };
 
   T.init = async ()=>{
     const ok = await API.whenReady();
     if(!ok) return;
     try{
-      const r = await API.post("/api/track/visit",{visitorId, sessionId:sessionId(), referrer:document.referrer||"", page:location.hash||"#/"},{retries:2});
+      const r = await API.post("/api/track/visit",{visitorId, sessionId:sessionId(), referrer:document.referrer||"", page:pageKey()},{retries:2});
       T.profile = r.profile || {}; T.returning = r.returning; T.popupShown = r.popupShown; T.ready = true;
       if(typeof Popup!=="undefined") Popup.arm();
       if(Store.cartCount()) T.syncCart();
