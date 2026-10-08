@@ -70,6 +70,7 @@ function render(){
   setupReveals();
   syncHeaderHeight();
   window.scrollTo(0,0);
+  if(typeof applySEO!=="undefined") applySEO(route, id, params);
   if(typeof Track!=="undefined") Track.onRoute(route, id, params);
 }
 
