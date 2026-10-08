@@ -1,6 +1,6 @@
 function viewProduct(id){
   const p = findProduct(id);
-  if(!p) return notFound();
+  if(!p) return CATALOG_LOADED ? notFound() : '<div style="min-height:70vh"></div>';
   /* related: same category / shared tags first, in-stock only as primary recommendations */
   const rel = x => (x.category===p.category ? 3 : 0) + (x.group===p.group ? 1 : 0) + ((x.tags||[]).filter(t=>(p.tags||[]).includes(t)).length);
   const related = allProducts().filter(x=>x.id!==p.id && !isOut(x) && rel(x)>0).sort((a,b)=>rel(b)-rel(a)).slice(0,4);
@@ -10,10 +10,10 @@ function viewProduct(id){
   return `
   <section class="section">
     <div class="container">
-      <p class="breadcrumb"><a href="#/">Home</a> / <a href="#/shop?cat=${p.group}">${allCategoryLabels()[p.group]}</a> / ${escapeHtml(p.name)}</p>
+      <p class="breadcrumb"><a href="/">Home</a> / <a href="${groupHref(p.group)}">${allCategoryLabels()[p.group]}</a> / ${escapeHtml(p.name)}</p>
       <div class="pdp" style="margin-top:20px;">
         <div class="pdp-media-wrap">
-          <div class="pdp-media img-wrap shimmer"><img id="pdpMain" src="${gallery[0]}" ${fb(p.group)} alt="${escapeHtml(p.name)}">${stockBadge(p)}</div>
+          <div class="pdp-media img-wrap shimmer"><img id="pdpMain" width="800" height="800" fetchpriority="high" src="${gallery[0]}" ${fb(p.group)} alt="${escapeHtml(p.name)}">${stockBadge(p)}</div>
           ${gallery.length>1 ? `<div class="pdp-thumbs">${gallery.map((u,i)=>`<button type="button" class="pdp-thumb${i===0?" on":""}" data-img="${u}" aria-label="Image ${i+1}"><img src="${u.replace("c_limit,w_1400","c_fill,w_160,h_160")}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
           ${p.video ? `<video class="pdp-video" src="${p.video}" controls preload="none" playsinline></video>` : ""}
         </div>
@@ -45,8 +45,7 @@ function viewProduct(id){
             <tr><td>Finish</td><td>${p.color}</td></tr>
             ${Object.entries(p.specs||{}).filter(([k])=>!/^(material|colou?r)$/i.test(k)).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join("")}
             <tr><td>Room</td><td>${allCategoryLabels()[p.group]}</td></tr>
-            <tr><td>Delivery</td><td>7–10 days, installed</td></tr>
-            <tr><td>Warranty</td><td>5 years on the frame</td></tr>
+            <tr><td>Delivery</td><td>Cost and timeline confirmed when you order</td></tr>
           </table>
         </div>
       </div>
