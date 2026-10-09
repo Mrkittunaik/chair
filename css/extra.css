@@ -121,8 +121,10 @@ body.pop-open{overflow:hidden;}
   .nav-dd{display:block;}
   .nav-dd-btn{width:100%;justify-content:space-between;padding:14px 0;font-size:15.5px;border-bottom:1px solid var(--line);}
   .nav-dd-btn.active{border-bottom-color:var(--line);}
-  .nav-dd-menu{padding:0 0 4px 14px;background:var(--stone,#f6f4ee);}
-  .main-nav.open .nav-dd-menu a{padding:12px 0;font-size:15px;}
+  .nav-dd-menu{padding:0 0 6px 16px;margin:0 0 4px;background:#fff;border-left:3px solid var(--brand,#DC0000);}
+  .main-nav.open .nav-dd-menu a{display:block;width:100%;padding:12px 0;font-size:15px;font-weight:600;border-bottom:1px solid var(--line);}
+  .main-nav.open .nav-dd-menu a:last-child{border-bottom:0;}
+  .main-nav.open .nav-dd-menu a.active{color:var(--brand-dark,#b80000);background:none;border-bottom-color:var(--line);}
 }
 
 /* ================= Header search: never squeezed into an empty box ================= */
