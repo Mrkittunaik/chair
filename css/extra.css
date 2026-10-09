@@ -91,3 +91,60 @@ body.pop-open{overflow:hidden;}
 .pc-media .badge-off{left:10px;right:auto;top:10px;}
 /* low/out-of-stock tag moves to bottom-left of the image */
 .pc-media .badge-stock{left:10px;top:auto;bottom:10px;}
+
+/* ================= Nav dropdown (Furniture ▾) ================= */
+.nav-dd{position:relative;display:flex;align-items:center;}
+.nav-dd-btn{font:inherit;font-size:13.5px;font-weight:600;color:var(--ink-soft);background:none;border:0;
+  border-bottom:1.5px solid transparent;padding:4px 0;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.nav-dd-btn:hover,.nav-dd.open .nav-dd-btn{color:var(--ink);}
+.nav-dd-btn.active{color:var(--ink);border-bottom-color:var(--brass);}
+.nav-dd-chev{width:13px;height:13px;transition:transform .2s;flex-shrink:0;}
+.nav-dd.open .nav-dd-chev{transform:rotate(180deg);}
+.nav-dd-menu{display:none;}
+.nav-dd.open .nav-dd-menu{display:block;}
+
+@media (min-width:901px){
+  .nav-dd-menu{position:absolute;top:100%;left:-14px;min-width:220px;padding:6px;margin-top:6px;background:#fff;
+    border:1px solid var(--line);border-radius:var(--radius-lg,6px);box-shadow:0 14px 34px rgba(22,36,30,.16);z-index:98;}
+  /* invisible bridge so the menu doesn't close while the pointer crosses the gap */
+  .nav-dd-menu::before{content:"";position:absolute;left:0;right:0;top:-8px;height:8px;}
+  .main-nav .nav-dd-menu a{display:block;padding:10px 14px;border-bottom:0;border-radius:4px;white-space:nowrap;}
+  .main-nav .nav-dd-menu a:hover{background:var(--stone,#f1efe9);color:var(--ink);}
+  .main-nav .nav-dd-menu a.active{background:var(--brand-tint,#fdeaea);color:var(--brand-dark,#b80000);}
+}
+@media (hover:hover) and (min-width:901px){
+  .nav-dd:hover .nav-dd-menu{display:block;}
+  .nav-dd:hover .nav-dd-btn{color:var(--ink);}
+  .nav-dd:hover .nav-dd-chev{transform:rotate(180deg);}
+}
+@media (max-width:900px){
+  .nav-dd{display:block;}
+  .nav-dd-btn{width:100%;justify-content:space-between;padding:14px 0;font-size:15.5px;border-bottom:1px solid var(--line);}
+  .nav-dd-btn.active{border-bottom-color:var(--line);}
+  .nav-dd-menu{padding:0 0 4px 14px;background:var(--stone,#f6f4ee);}
+  .main-nav.open .nav-dd-menu a{padding:12px 0;font-size:15px;}
+}
+
+/* ================= Header search: never squeezed into an empty box ================= */
+.header-search{min-width:220px;}
+/* below 1400px there isn't room beside the nav, use the full-width search row instead */
+@media (max-width:1399px){
+  .header-search{display:none;}
+  .mobile-search{display:block;padding:0 24px 12px;}
+}
+
+/* ================= Compact product card ================= */
+.pc-media img{aspect-ratio:4/3;}
+.pc-body{padding:10px 12px 12px;gap:4px;}
+.pc-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pc-meta{padding-top:4px;}
+.pc-actions{margin-top:6px;flex-direction:row;flex-wrap:nowrap;align-items:stretch;gap:8px;}
+.pc-actions .btn{min-height:38px;padding:8px 10px;}
+.pc-actions [data-add],.pc-actions button[disabled]{flex:1 1 auto;min-width:0;white-space:nowrap;}
+.pc-actions .pc-wa{flex:0 0 40px;width:40px;min-width:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;}
+@media (max-width:900px){.pc-actions .btn{min-height:38px;}}
+@media (max-width:640px){
+  .pc-body{padding:9px 10px 10px;}
+  .pc-actions{gap:6px;}
+  .pc-actions .btn{font-size:11.5px;padding:8px 6px;}
+}
