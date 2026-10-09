@@ -105,7 +105,12 @@ function render(){
     if(ssr){ finishRender(route, id, params, active, ()=>afterSeoPage(path)); return; }
     app.innerHTML = '<div class="seo-loading" style="min-height:60vh"></div>';
     seoLoad().then(L=>{
-      if(!L || parseRoute().path !== path) return;
+      if(parseRoute().path !== path) return;
+      if(!L){   /* seo/ modules missing or failed to load: never leave a blank page */
+        app.innerHTML = fallbackPageHTML(path);
+        finishRender(route, id, params, active, null);
+        return;
+      }
       const ctx = seoCtx(), r = L.resolve(path, "", ctx);
       if(r.redirect){ history.replaceState(null,"",r.redirect); return render(); }
       app.innerHTML = (r.kind==="page") ? L.pageHTML(r, ctx) : notFound();
