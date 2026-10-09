@@ -111,3 +111,45 @@ function notFound(){
     <h1>That page does not exist</h1><p>The link may be old or mistyped. Search the catalogue or head back home.</p>
     <a href="/search" class="btn btn-primary">Search</a></div></div></section>`;
 }
+
+/* ---------------- Fallback landing pages ----------------
+   Used only when the /seo/*.js modules can't be loaded, so nav links like
+   /office-furniture or /school-college-furniture never render a blank page. */
+const FALLBACK_PAGES = {
+  "/office-furniture":        { h1:"Office Furniture", desc:"Office chairs, tables and workstations at competitive prices. Based in Hyderabad, delivering across India.", match:null, group:"office" },
+  "/office-chairs":           { h1:"Office Chairs", desc:"Comfortable office chairs for every budget.", match:/chair/i, group:"office" },
+  "/ergonomic-chairs":        { h1:"Ergonomic Chairs", desc:"Chairs with proper back support for long working hours.", match:/ergonomic|chair/i, group:"office" },
+  "/executive-chairs":        { h1:"Executive Chairs", desc:"High-back executive chairs for cabins and boardrooms.", match:/executive|chair/i, group:"office" },
+  "/office-tables":           { h1:"Office Tables & Desks", desc:"Desks, workstations and tables for offices and study corners.", match:/table|desk/i, group:"office" },
+  "/custom-office-furniture": { h1:"Custom Furniture", desc:"Custom chairs and tables made to your size, colour and material. Send us your requirement and we will quote.", match:null, group:"office" },
+  "/custom-office-tables":    { h1:"Custom Office Tables", desc:"Tables and workstations made to your size, colour and material.", match:/table|desk/i, group:"office" },
+  "/school-college-furniture":{ h1:"Furniture for Schools & Colleges", desc:"Benches, desks and chairs for classrooms, labs and libraries. Bulk pricing and custom sizes available.", match:/school|college|student|study|bench|desk|classroom/i, group:"office" },
+  "/school-furniture":        { h1:"School Furniture", desc:"Classroom desks, benches and chairs for schools.", match:/school|student|study|bench|desk|classroom/i, group:"office" },
+  "/college-furniture":       { h1:"College Furniture", desc:"Furniture for colleges, labs, hostels and libraries.", match:/college|student|study|bench|desk|classroom/i, group:"office" },
+  "/institutional-furniture": { h1:"Institutional Furniture", desc:"Furniture for institutions, offices and large projects.", match:null, group:"office" },
+  "/office-furniture-hyderabad": { h1:"Office Furniture in Hyderabad", desc:"Quality office furniture from Hyderabad at competitive prices.", match:null, group:"office" },
+  "/india-delivery":          { h1:"Delivery Across India", desc:"We deliver office, school and college furniture across India.", match:null, group:"office" }
+};
+function fallbackPageHTML(path){
+  const pg = FALLBACK_PAGES[path];
+  if(!pg) return notFound();
+  const all = allProducts();
+  let list = pg.match ? all.filter(p=>pg.match.test(p.name+" "+(p.category||""))) : [];
+  if(!list.length) list = all.filter(p=>p.group===pg.group);
+  if(!list.length) list = all;
+  list = list.slice(0,12);
+  document.title = pg.h1 + " | Adil Furnitures";
+  return `
+  <section class="page-head"><div class="container">
+    <p class="breadcrumb"><a href="/">Home</a> / ${escapeHtml(pg.h1)}</p>
+    <h1 class="page-title">${escapeHtml(pg.h1)}</h1>
+    <p class="page-desc">${escapeHtml(pg.desc)}</p>
+    <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+      <a href="/bulk-furniture-orders" class="btn btn-primary btn-sm">Request a Quote</a>
+      <a href="/shop" class="btn btn-secondary btn-sm">Shop all</a>
+    </p>
+  </div></section>
+  <section class="section"><div class="container">
+    <div class="product-grid">${list.map(productCardHTML).join("")}</div>
+  </div></section>`;
+}
