@@ -12,9 +12,11 @@ const ICONS = {
 /* ---------------- Header & footer ---------------- */
 const NAV = [
   {href:"/", label:"Home", key:"home"},
-  {href:"/office-furniture", label:"Office Furniture", key:"office"},
-  {href:"/custom-office-furniture", label:"Custom Furniture", key:"custom"},
-  {href:"/school-college-furniture", label:"Schools & Colleges", key:"edu"},
+  {label:"Furniture", key:"furniture", children:[
+    {href:"/office-furniture", label:"Office Furniture", key:"office"},
+    {href:"/custom-office-furniture", label:"Custom Furniture", key:"custom"},
+    {href:"/school-college-furniture", label:"Schools & Colleges", key:"edu"}
+  ]},
   {href:"/shop", label:"Shop All", key:"shop"},
   {href:"/bulk-furniture-orders", label:"Request a Quote", key:"bulk", cls:"nav-bulk"},
   {href:"/about", label:"About", key:"about"},
