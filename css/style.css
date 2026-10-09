@@ -634,7 +634,3 @@ body.nav-locked{position:relative;overflow:hidden;touch-action:none;}
   .main-nav.open .nav-cta{display:flex;margin-top:16px;padding:14px 20px;border-bottom:0;color:#fff;font-size:15px;}
   .wa-float{width:50px;height:50px;bottom:calc(84px + env(safe-area-inset-bottom,0px));}
 }
-@media (max-width:480px){
-  .pc-actions{flex-direction:column;}
-  .pc-actions [data-wa]{width:100%;}
-}
