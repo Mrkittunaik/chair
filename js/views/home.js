@@ -21,12 +21,12 @@ function defaultHomeContent(){
     catRail: { title: "Shop by category", visible: true },
     collectionsSection: { title: "Desks and workstations", sub: "Layouts for executive cabins, study corners, open offices and growing teams.", visible: true },
     collections: [
-      {title:"Executive desks for corner offices",label:"Executive",img:"/assets/collections/executive-office-desk-india.webp",href:"/office-tables"},
-      {title:"Compact desks for home study corners",label:"Study",img:"/assets/collections/study-desk-for-home-office-india.webp",href:"/office-tables"},
-      {title:"Height-adjustable desks for open floors",label:"Open office",img:"/assets/collections/open-office-workstations-india.webp",href:"/office-tables"},
-      {title:"Modular benching for growing teams",label:"Team desks",img:"/assets/collections/modular-team-desks-office-india.webp",href:"/custom-office-tables"},
-      {title:"Collaborative workstations with storage",label:"Workstations",img:"/assets/collections/collaborative-office-workstations-india.webp",href:"/office-tables"},
-      {title:"Cluster desks built for busy floors",label:"Clusters",img:"/assets/collections/cluster-workstation-desks-india.webp",href:"/bulk-furniture-orders"}
+      {title:"Executive desks for corner offices",label:"Executive",img:"/assets/collections/office-desk.png",href:"/office-tables"},
+      {title:"Compact desks for home study corners",label:"Study",img:"/assets/collections/study-desk.png",href:"/office-tables"},
+      {title:"Height-adjustable desks for open floors",label:"Open office",img:"/assets/collections/open-office-teal.png",href:"/office-tables"},
+      {title:"Modular benching for growing teams",label:"Team desks",img:"/assets/collections/blue-panel-desks.png",href:"/custom-office-tables"},
+      {title:"Collaborative workstations with storage",label:"Workstations",img:"/assets/collections/collab-desks-green.png",href:"/office-tables"},
+      {title:"Cluster desks built for busy floors",label:"Clusters",img:"/assets/collections/workstation-cluster.png",href:"/bulk-furniture-orders"}
     ],
     featured1: { group: "office", title: "Office furniture", sub: "Chairs, desks and storage for focused work.", visible: true },
     featured2: { group: "gaming", title: "Gaming", sub: "Desks and seating that survive long sessions.", visible: true },
