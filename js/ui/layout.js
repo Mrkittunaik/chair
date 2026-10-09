@@ -5,10 +5,18 @@ function renderHeader(active, query){
     <div class="container header-inner">
       <a href="/" class="logo" aria-label="Adil Furnitures home"><img class="logo-img" src="assets/collections/logo/adil-furnitures-logo.png" alt="Adil Furnitures"></a>
       <nav class="main-nav" id="mainNav">
-        ${NAV.map(n=> n.wa
-          ? `<a href="${waLink(n.wa==='bulk'?waBulkMsg():waCustomMsg())}" data-wa="${n.wa}" class="nav-wa-link" target="_blank" rel="noopener">${n.label}</a>`
-          : `<a href="${n.href}" class="${(n.cls||'')+' '+(active===n.key?'active':'')}"${active===n.key?' aria-current="page"':''}>${n.label}</a>`
-        ).join("")}
+        ${NAV.map(n=>{
+          if(n.children){
+            const on = n.children.some(c=>c.key===active);
+            return `<div class="nav-dd${on?' has-active':''}">
+              <button type="button" class="nav-dd-btn${on?' active':''}" aria-haspopup="true" aria-expanded="false">${n.label}<svg class="nav-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <div class="nav-dd-menu">${n.children.map(c=>`<a href="${c.href}" class="${active===c.key?'active':''}"${active===c.key?' aria-current="page"':''}>${c.label}</a>`).join("")}</div>
+            </div>`;
+          }
+          return n.wa
+            ? `<a href="${waLink(n.wa==='bulk'?waBulkMsg():waCustomMsg())}" data-wa="${n.wa}" class="nav-wa-link" target="_blank" rel="noopener">${n.label}</a>`
+            : `<a href="${n.href}" class="${(n.cls||'')+' '+(active===n.key?'active':'')}"${active===n.key?' aria-current="page"':''}>${n.label}</a>`;
+        }).join("")}
         <a href="${waLink('Hello '+WA_BRAND+', I have a question.')}" data-wa="general" class="btn btn-wa nav-cta" target="_blank" rel="noopener">${WA_ICON}<span>Chat on WhatsApp</span></a>
       </nav>
       <div class="nav-backdrop" id="navBackdrop"></div>
@@ -52,11 +60,28 @@ function renderHeader(active, query){
     nav.classList.contains("open") ? closeMenu() : openMenu();
   });
   backdrop.addEventListener("click", closeMenu);
-  nav.addEventListener("click", e=>{ if(e.target.closest("a")) closeMenu(); });
+  function closeDropdowns(except){
+    nav.querySelectorAll(".nav-dd.open").forEach(d=>{
+      if(d===except) return;
+      d.classList.remove("open");
+      d.querySelector(".nav-dd-btn").setAttribute("aria-expanded","false");
+    });
+  }
+  nav.querySelectorAll(".nav-dd-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const dd = btn.parentElement, willOpen = !dd.classList.contains("open");
+      closeDropdowns(willOpen ? dd : null);
+      dd.classList.toggle("open", willOpen);
+      btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+  });
+  nav.addEventListener("click", e=>{ if(e.target.closest("a")){ closeDropdowns(); closeMenu(); } });
+  window.__closeDropdowns = closeDropdowns;
   window.__closeMenu = closeMenu;
   if(!window.__navKeyBound){
     window.__navKeyBound = true;
-    document.addEventListener("keydown", e=>{ if(e.key==="Escape" && window.__closeMenu) window.__closeMenu(); });
+    document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ if(window.__closeDropdowns) window.__closeDropdowns(); if(window.__closeMenu) window.__closeMenu(); } });
+    document.addEventListener("click", e=>{ if(window.__closeDropdowns && !e.target.closest(".nav-dd")) window.__closeDropdowns(); });
     window.addEventListener("resize", ()=>{ if(window.innerWidth>900 && window.__closeMenu) window.__closeMenu(); });
   }
 
