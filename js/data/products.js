@@ -152,8 +152,11 @@ const BASE_CATEGORIES = [
    (1) the seed/migration source for the server and (2) an offline fallback if the backend has never been reachable.
    The last server catalogue is cached in localStorage only to paint faster on the next visit. */
 const CAT_KEY = "adil_catalog_v2";
-let CATALOG = (()=>{ try{ return JSON.parse(localStorage.getItem(CAT_KEY)) || null; }catch(e){ return null; } })();
+/* NOTHING from the catalogue is stored on the device any more: every visit loads it fresh from the backend. */
+try{ localStorage.removeItem(CAT_KEY); }catch(e){}
+let CATALOG = null;
 let CATALOG_LOADED = false;
+let CATALOG_FAILED = false;   /* backend unreachable after all retries -> show built-in fallback instead of loading forever */
 let _catBusy = null;
 /* Fetch the live catalogue. Cached copy (if any) is shown instantly, then ALWAYS replaced by the server copy.
    Re-render keeps the visitor's scroll position, so live updates never jump the page. */
@@ -162,9 +165,9 @@ function loadCatalog(){
   _catBusy = (async ()=>{
     try{
       const d = await API.get("/api/public/catalog", {retries:8, wake:true, timeout:25000});
-      const changed = !CATALOG || CATALOG.version !== d.version || JSON.stringify(CATALOG.products) !== JSON.stringify(d.products) || JSON.stringify(CATALOG.settings) !== JSON.stringify(d.settings) || JSON.stringify(CATALOG.categories) !== JSON.stringify(d.categories);
+      const changed = !CATALOG_LOADED || CATALOG.version !== d.version || JSON.stringify(CATALOG.products) !== JSON.stringify(d.products) || JSON.stringify(CATALOG.settings) !== JSON.stringify(d.settings) || JSON.stringify(CATALOG.categories) !== JSON.stringify(d.categories);
       CATALOG = d; CATALOG_LOADED = true;
-      try{ localStorage.setItem(CAT_KEY, JSON.stringify(d)); }catch(e){}
+      CATALOG_FAILED = false;
       if(typeof waSync === "function") waSync();
       if(typeof Store !== "undefined") Store.pruneCart();
       if(typeof Popup !== "undefined") Popup.schedule();
@@ -173,7 +176,9 @@ function loadCatalog(){
         render();
         if(y) window.scrollTo(0, y);
       }
-    }catch(e){}
+    }catch(e){
+      if(!CATALOG_LOADED && !CATALOG_FAILED){ CATALOG_FAILED = true; if(typeof render === "function") render(); }
+    }
     finally{ _catBusy = null; }
   })();
   return _catBusy;
