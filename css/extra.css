@@ -150,3 +150,23 @@ body.pop-open{overflow:hidden;}
   .pc-actions{gap:6px;}
   .pc-actions .btn{font-size:11.5px;padding:8px 6px;}
 }
+
+/* ================= v2: show the FULL photo (no cut-off) + smaller product-page image ================= */
+/* admin uploads are cropped to a square, so cards use a square box and "contain" = whole photo, never cropped */
+.pc-media{background:#fff;}
+.pc-media img{aspect-ratio:1/1;object-fit:contain;background:#fff;}
+.product-card{box-shadow:0 4px 14px rgba(20,20,20,.06);}
+
+/* product page: medium image on the left, details + buttons fit on one screen */
+.pdp{grid-template-columns:minmax(0,400px) 1fr;gap:36px;}
+.pdp-media-wrap{width:100%;max-width:400px;}
+.pdp-media img{aspect-ratio:1/1;object-fit:contain;background:#fff;max-height:min(400px,60vh);}
+.pdp-thumb{flex:0 0 58px;height:58px;}
+.pdp-thumb img{object-fit:contain;background:#fff;}
+.pdp h1{font-size:28px;margin:4px 0 8px;}
+.pdp .price{font-size:26px;margin:8px 0;}
+@media(max-width:900px){
+  .pdp{grid-template-columns:1fr;gap:20px;}
+  .pdp-media-wrap{max-width:340px;margin:0 auto;}
+  .pdp-media img{max-height:340px;}
+}
