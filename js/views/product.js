@@ -13,7 +13,10 @@ function viewProduct(id){
       <p class="breadcrumb"><a href="/">Home</a> / <a href="${groupHref(p.group)}">${allCategoryLabels()[p.group]}</a> / ${escapeHtml(p.name)}</p>
       <div class="pdp" style="margin-top:20px;">
         <div class="pdp-media-wrap">
-          <div class="pdp-media img-wrap shimmer"><img id="pdpMain" width="800" height="800" fetchpriority="high" src="${gallery[0]}" ${fb(p.group)} alt="${escapeHtml(p.name)}">${stockBadge(p)}</div>
+          <div class="pdp-media img-wrap shimmer">
+            <div class="cx cx-pdp" data-carousel data-auto="${gallery.length>1?1:0}" id="pdpCx"><div class="cx-track">${gallery.map((u,i)=>`<div class="cx-slide"><img ${i===0?'id="pdpMain" fetchpriority="high"':'loading="lazy"'} width="800" height="800" src="${u}" ${fb(p.group)} alt="${escapeHtml(p.name)}${i?` – photo ${i+1}`:""}" draggable="false"></div>`).join("")}</div>
+            ${gallery.length>1?`<div class="cx-dots" aria-hidden="true">${gallery.map((_,i)=>`<i${i===0?' class="on"':''}></i>`).join("")}</div><button type="button" class="cx-nav prev" aria-label="Previous image">‹</button><button type="button" class="cx-nav next" aria-label="Next image">›</button>`:""}</div>
+            ${stockBadge(p)}</div>
           ${gallery.length>1 ? `<div class="pdp-thumbs">${gallery.map((u,i)=>`<button type="button" class="pdp-thumb${i===0?" on":""}" data-img="${u}" aria-label="Image ${i+1}"><img src="${u.replace("c_limit,w_1400","c_fill,w_160,h_160")}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
           ${p.video ? `<video class="pdp-video" src="${p.video}" controls preload="none" playsinline></video>` : ""}
         </div>
@@ -72,10 +75,13 @@ function afterProduct(id){
   document.getElementById("qMinus").addEventListener("click", ()=>setQ(Math.max(1,q-1)));
   document.getElementById("qPlus").addEventListener("click", ()=>setQ(Math.min(999,q+1)));
   document.getElementById("pdpAdd").addEventListener("click", ()=>{ if(Store.addToCart(p.id,q)) showToast(`Added ${q} to cart`); });
-  document.querySelectorAll(".pdp-thumb").forEach(b=>b.addEventListener("click",()=>{
-    document.getElementById("pdpMain").src = b.dataset.img;
-    document.querySelectorAll(".pdp-thumb").forEach(x=>x.classList.toggle("on", x===b));
-  }));
+  const cx = document.getElementById("pdpCx");
+  const thumbs = [...document.querySelectorAll(".pdp-thumb")];
+  thumbs.forEach((b,i)=>b.addEventListener("click",()=>{ if(cx && cx.__cx) cx.__cx.go(i); }));
+  if(cx) cx.addEventListener("cx:change", e=>{
+    thumbs.forEach((x,i)=>x.classList.toggle("on", i===e.detail.index));
+    const t = thumbs[e.detail.index]; if(t) t.scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"});
+  });
 }
 
 /* ---------------- View: Cart ---------------- */
