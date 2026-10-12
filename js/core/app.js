@@ -119,6 +119,14 @@ function render(){
     return;
   }
 
+  /* catalogue is never cached on the device: wait for the backend instead of flashing old data */
+  if(route!=="page" && !CATALOG_LOADED && !CATALOG_FAILED){
+    app.innerHTML = '<div class="seo-loading" style="min-height:70vh;display:flex;align-items:center;justify-content:center;color:#777;font-size:14px">Loading latest products…</div>';
+    renderHeader(active, route==="search" ? (params.q||"") : "");
+    renderFooter(); syncHeaderHeight();
+    return;
+  }
+
   let html = "", after = null;
   switch(route){
     case "home": html = viewHome(); after = afterHome; break;
