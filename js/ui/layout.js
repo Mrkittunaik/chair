@@ -202,13 +202,21 @@ function stockBadge(p){
 function priceHTML(p){
   return `<span class="pc-price">${formatINR(p.price)}</span>` + (p.compareAtPrice>p.price ? ` <s class="pc-was">${formatINR(p.compareAtPrice)}</s>` : "");
 }
+function cardMediaHTML(p){
+  const imgs = [...new Set([p.img, ...((p.images&&p.images.length)?p.images:[])].filter(Boolean))].slice(0,6);
+  const href = productPath(p);
+  if(imgs.length<2) return `<a href="${href}"><img ${imgAttrs(p)} ${fb(p.group)} alt="${escapeHtml(p.name)}" loading="lazy" decoding="async"></a>`;
+  return `<div class="cx" data-carousel data-auto="1"><div class="cx-track">${imgs.map((u,i)=>
+    `<a class="cx-slide" href="${href}" tabindex="${i?-1:0}"><img ${i===0?imgAttrs(p):`src="${u}"`} ${fb(p.group)} alt="${escapeHtml(p.name)}${i?` – photo ${i+1}`:""}" ${i?'loading="lazy"':'loading="lazy"'} decoding="async" draggable="false"></a>`).join("")}</div>
+    <div class="cx-dots" aria-hidden="true">${imgs.map((_,i)=>`<i${i===0?' class="on"':''}></i>`).join("")}</div></div>`;
+}
 function productCardHTML(p){
   const wished = Store.inWish(p.id);
   const out = isOut(p);
   return `
   <article class="product-card${out?" is-out":""}">
     <div class="pc-media img-wrap shimmer">
-      <a href="${productPath(p)}"><img ${imgAttrs(p)} ${fb(p.group)} alt="${escapeHtml(p.name)}" loading="lazy" decoding="async"></a>
+      ${cardMediaHTML(p)}
       ${stockBadge(p)}${p.discount>0 && !out ? `<span class="badge-off">-${p.discount}%</span>` : ""}
       <button class="pc-wish ${wished?'on':''}" data-wish="${p.id}" aria-label="${wished?'Remove from wishlist':'Save to wishlist'}">${wished?ICONS.heartFill:ICONS.heart}</button>
     </div>
