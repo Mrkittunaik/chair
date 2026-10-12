@@ -94,6 +94,7 @@ function renderHeader(active, query){
     });
   });
   syncBadges();
+  if(window.renderBottomNav) window.renderBottomNav(active);
 }
 
 function footerSocial(){
@@ -182,6 +183,8 @@ function syncBadges(){
   const cb = document.getElementById("cartBadge"), wb = document.getElementById("wishBadge");
   if(cb){ cb.hidden = c===0; cb.textContent = c; }
   if(wb){ wb.hidden = w===0; wb.textContent = w; }
+  const db = document.getElementById("dockCartBadge");
+  if(db){ db.hidden = c===0; db.textContent = c>99?"99+":c; }
 }
 
 let toastTimer;
