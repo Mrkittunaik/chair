@@ -1,0 +1,173 @@
+/* ==========================================================================
+   mobile-app.css  —  phone-only "native app" look. Desktop is untouched.
+   Loaded AFTER style.css / extra.css / seo.css so it overrides them.
+   Radius scale: 8px = cards, banners, inputs, sheets · 6px = buttons, chips, badges
+   ========================================================================== */
+@media (max-width:900px){
+  :root{
+    --r-card:8px;
+    --r-small:6px;
+    --app-bg:#F3F3F5;
+    --card-shadow:0 1px 2px rgba(20,20,20,.05),0 3px 10px rgba(20,20,20,.05);
+    --side:12px;
+    --radius:6px;
+    --radius-lg:8px;
+  }
+  html{scroll-behavior:auto;}
+  body{background:var(--app-bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  a,button{-webkit-tap-highlight-color:transparent;}
+
+  /* ---------- consistent side spacing on every page ---------- */
+  .container{padding-left:max(var(--side),env(safe-area-inset-left));padding-right:max(var(--side),env(safe-area-inset-right));}
+  .section{padding:18px 0;}
+  .section-tight{padding-top:0;}
+  .page-head + .section{padding-top:12px;}
+
+  /* ---------- top app bar ---------- */
+  .site-header{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:1px solid #E7E7EA;}
+  .header-inner{padding-top:8px;padding-bottom:8px;}
+  .mobile-search{padding:0 var(--side) 10px;}
+  .mobile-search .header-search input,
+  .mobile-search input{background:#F1F1F4;border:1px solid transparent;border-radius:var(--r-card);height:42px;}
+  .mobile-search input:focus{background:#fff;border-color:var(--brand);outline:none;}
+  .icon-group{border-radius:var(--r-card);}
+  .icon-btn{border-radius:var(--r-card);}
+  .badge,.gd-badge{border-radius:6px;}
+
+  /* ---------- headings: app-style sans, not serif ---------- */
+  h1,h2,h3,.section-head h2,.page-title,.hero-card-title,.pdp h1,.summary h3,
+  .collection-card .ctitle,.promo h2,.value-card h3{font-family:var(--sans);letter-spacing:-.01em;font-weight:700;}
+  .section-head{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .section-head h2{font-size:18px;line-height:1.2;}
+  .view-all{border:0;color:var(--brand);font-size:12.5px;font-weight:700;padding:6px 0;}
+  .view-all::after{content:" ›";}
+
+  /* ---------- less text: sub-lines, long SEO copy, page blurbs ---------- */
+  .section-sub{display:none;}
+  #seoHome,.seo-home{display:none!important;}          /* the "more text" block on Home */
+  .home-about p{display:none;}                         /* about blurb on Home (image + heading stay) */
+  .page-desc{display:none;}
+
+  /* ---------- hero banner ---------- */
+  .hero-card-wrap{padding:var(--side) var(--side) 4px;}
+  .hero-card{border-radius:var(--r-card);overflow:hidden;min-height:260px;box-shadow:var(--card-shadow);}
+  .hero-card-content{padding:70px 14px 14px;}
+  .hero-card-title{font-size:20px;line-height:1.22;margin-bottom:12px;}
+  .hero-card-actions{gap:8px;border:0;background:none;}
+  .btn-pill{border-radius:var(--r-small);padding:12px 8px;font-size:12.5px;font-weight:700;}
+  .btn-pill-ghost{border:1.5px solid rgba(255,255,255,.85);background:rgba(0,0,0,.28);color:#fff;}
+
+  /* ---------- category rail ---------- */
+  .cat-rail{gap:10px;margin-right:calc(var(--side) * -1);padding-right:var(--side);}
+  .cat-rail .cat-card{flex:0 0 78px;}
+  .cat-card .cat-img{border-radius:var(--r-card);border:0;box-shadow:var(--card-shadow);}
+  .cat-name{font-size:11px;font-weight:700;}
+
+  /* ---------- collections slider ---------- */
+  .grid-collections{margin-right:calc(var(--side) * -1);padding-right:var(--side);gap:10px;}
+  .grid-collections .collection-card{flex:0 0 74%;border-radius:var(--r-card);box-shadow:var(--card-shadow);}
+  .grid-collections .collection-card img{aspect-ratio:4/3;}
+  .collection-card .overlay{padding:12px;}
+  .collection-card .ctitle{font-size:14px;line-height:1.25;}
+
+  /* ---------- PRODUCT CARDS (app style) ---------- */
+  .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .product-card{border:0!important;border-radius:var(--r-card);background:#fff;box-shadow:var(--card-shadow)!important;overflow:hidden;}
+  .product-card:active{transform:scale(.985);transition:transform .12s;}
+  .pc-media{border-radius:0;background:#fff;}
+  .pc-media img{aspect-ratio:1/1;}
+  .pc-cat{display:none;}                                /* tiny category text removed */
+  .pc-body{padding:8px 10px 10px;gap:3px;}
+  .pc-name{font-size:13px;font-weight:600;line-height:1.3;min-height:2.6em;}
+  .pc-meta{padding-top:2px;align-items:center;}
+  .pc-price{font-size:15px;font-weight:800;}
+  .pc-was{font-size:11px;}
+  .pc-rating{font-size:11px;}
+  .pc-actions{margin-top:6px;gap:6px;}
+  .pc-actions .btn{border-radius:var(--r-small);min-height:38px;font-size:12px;}
+  .pc-actions .pc-wa{flex:0 0 38px;width:38px;min-width:38px;}
+  .pc-wish{top:8px;right:8px;width:32px;height:32px;box-shadow:0 1px 4px rgba(0,0,0,.15);}
+  .badge-off,.badge-stock{border-radius:var(--r-small);}
+  .badge-off{top:8px;left:8px;}
+
+  /* ---------- banners / about / promo ---------- */
+  .promo{border-radius:var(--r-card);box-shadow:var(--card-shadow);}
+  .promo img{height:190px;}
+  .promo .promo-in{padding:0 16px;gap:10px;}
+  .promo h2{font-size:20px;}
+  .promo p{font-size:13px;}
+  .promo .btn-primary{align-self:stretch;width:100%;}
+  .home-about .about-grid{gap:12px;}
+  .about-img{border-radius:var(--r-card);box-shadow:var(--card-shadow);}
+  .about-grid h2{font-size:18px;}
+
+  /* ---------- buttons, inputs, chips (all 6-8px) ---------- */
+  .btn{border-radius:var(--r-small);min-height:44px;font-weight:700;}
+  .btn:active{transform:scale(.98);}
+  .field input,.field textarea,.field select,.search-form input,select,
+  .range-row input,.filter-drop .range-row input{border-radius:var(--r-card);background:#fff;border:1px solid #DADADF;}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--brand);background:#fff;}
+  .qty{border-radius:var(--r-card);}
+  .filter-bar{margin-left:calc(var(--side) * -1);margin-right:calc(var(--side) * -1);padding:2px var(--side) 6px;}
+  .filter-bar-btn,.filter-bar-clear,.chip{border-radius:var(--r-small);}
+  .filter-drop{border-radius:var(--r-card);}
+
+  /* ---------- inner pages: page header + cards ---------- */
+  .page-head{background:#fff;padding:12px 0 12px;border-bottom:1px solid #E7E7EA;}
+  .page-title{font-size:20px;margin-top:2px!important;}
+  .page-head .breadcrumb{font-size:11.5px;}
+  .result-bar{margin-bottom:10px;}
+
+  .value-card,.form-card,.summary,.cart-list,.empty-state,.bulk-aside,.lead-card,.suggest-row{
+    border-radius:var(--r-card);border:0;box-shadow:var(--card-shadow);background:#fff;}
+  .value-card{padding:14px;}
+  .value-card p{font-size:13px;}
+  .form-card{padding:14px;}
+  .summary{padding:14px;}
+
+  /* cart rows as cards */
+  .cart-row{border:0;border-radius:var(--r-card);background:#fff;box-shadow:var(--card-shadow);margin-bottom:10px;padding:10px;}
+  .cart-row img{border-radius:var(--r-small);}
+
+  /* product page */
+  .pdp-media,.pdp-media-wrap{border-radius:var(--r-card);overflow:hidden;}
+  .pdp-media-wrap{max-width:none;background:#fff;box-shadow:var(--card-shadow);}
+  .pdp-thumb{border-radius:var(--r-small);overflow:hidden;}
+  .pdp h1{font-size:20px;}
+  .spec-table{background:#fff;border-radius:var(--r-card);overflow:hidden;box-shadow:var(--card-shadow);}
+  .spec-table td{padding:10px 12px;}
+
+  /* SEO landing pages (not Home): long copy becomes tidy cards */
+  .seo-content .container{padding-left:var(--side);padding-right:var(--side);}
+  .seo-content section,.seo-content article{background:#fff;border-radius:var(--r-card);box-shadow:var(--card-shadow);padding:14px;margin-bottom:10px;}
+  .seo-content h2{font-size:17px;}
+  .seo-content p,.seo-content li{font-size:13.5px;line-height:1.55;}
+  .seo-faq details{background:#fff;border-radius:var(--r-card);box-shadow:var(--card-shadow);padding:12px 14px;margin-bottom:8px;}
+  .seo-faq summary{font-weight:700;font-size:14px;}
+
+  /* ---------- footer ---------- */
+  .site-footer{margin-top:8px;border-radius:var(--r-card) var(--r-card) 0 0;}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:20px 14px;padding:24px var(--side) 12px;}
+  .footer-grid > div:first-child{grid-column:1/-1;}
+  .footer-grid > div:first-child > p:first-of-type{display:none;}   /* long intro paragraph */
+  .site-footer h4{font-size:14px;font-family:var(--sans);}
+  .site-footer li{font-size:12.5px;padding:4px 0;}
+  .footer-base{padding:12px var(--side);}
+
+  /* ---------- popups, toast, floating buttons ---------- */
+  .lead-card{border-radius:var(--r-card) var(--r-card) 0 0;}
+  .toast{border-radius:var(--r-card);}
+  .wa-float{border-radius:var(--r-card);}
+
+  /* ---------- smooth page transition ---------- */
+  main#app > *{animation:appIn .28s cubic-bezier(.2,.7,.3,1) both;}
+  @keyframes appIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+}
+@media (max-width:900px) and (prefers-reduced-motion:reduce){
+  main#app > *{animation:none;}
+}
+@media (max-width:380px){
+  :root{--side:10px;}
+  .cat-rail .cat-card{flex:0 0 70px;}
+  .pc-name{font-size:12.5px;}
+}
