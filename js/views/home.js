@@ -142,7 +142,7 @@ function viewHome(){
   </section>` : ""}
 
   ${H.about.visible ? `
-  <section class="section section-tight">
+  <section class="section section-tight home-about">
     <div class="container about-grid">
       <div class="about-img"><img src="${H.about.img}" ${fb("general")} alt="${escapeHtml(H.about.alt)}" loading="lazy"></div>
       <div>
