@@ -154,23 +154,43 @@ const BASE_CATEGORIES = [
 const CAT_KEY = "adil_catalog_v2";
 let CATALOG = (()=>{ try{ return JSON.parse(localStorage.getItem(CAT_KEY)) || null; }catch(e){ return null; } })();
 let CATALOG_LOADED = false;
-async function loadCatalog(){
-  try{
-    const d = await API.get("/api/public/catalog", {retries:8, wake:true, timeout:25000});
-    const changed = !CATALOG || CATALOG.version !== d.version || JSON.stringify(CATALOG.products) !== JSON.stringify(d.products);
-    CATALOG = d; CATALOG_LOADED = true;
-    try{ localStorage.setItem(CAT_KEY, JSON.stringify(d)); }catch(e){}
-    if(typeof waSync === "function") waSync();
-    if(typeof Store !== "undefined") Store.pruneCart();
-    if(typeof Popup !== "undefined") Popup.schedule();
-    if(changed && typeof render === "function" && !/^\/(checkout|bulk)/.test(location.pathname)) render();
-  }catch(e){}
+let _catBusy = null;
+/* Fetch the live catalogue. Cached copy (if any) is shown instantly, then ALWAYS replaced by the server copy.
+   Re-render keeps the visitor's scroll position, so live updates never jump the page. */
+function loadCatalog(){
+  if(_catBusy) return _catBusy;
+  _catBusy = (async ()=>{
+    try{
+      const d = await API.get("/api/public/catalog", {retries:8, wake:true, timeout:25000});
+      const changed = !CATALOG || CATALOG.version !== d.version || JSON.stringify(CATALOG.products) !== JSON.stringify(d.products) || JSON.stringify(CATALOG.settings) !== JSON.stringify(d.settings) || JSON.stringify(CATALOG.categories) !== JSON.stringify(d.categories);
+      CATALOG = d; CATALOG_LOADED = true;
+      try{ localStorage.setItem(CAT_KEY, JSON.stringify(d)); }catch(e){}
+      if(typeof waSync === "function") waSync();
+      if(typeof Store !== "undefined") Store.pruneCart();
+      if(typeof Popup !== "undefined") Popup.schedule();
+      if(changed && typeof render === "function" && !/^\/(checkout|bulk)/.test(location.pathname)){
+        const y = window.scrollY;
+        render();
+        if(y) window.scrollTo(0, y);
+      }
+    }catch(e){}
+    finally{ _catBusy = null; }
+  })();
+  return _catBusy;
 }
-/* live updates: cheap version poll (tab visible only). A changed version re-fetches the catalogue. */
-setInterval(async ()=>{
-  if(document.hidden || !CATALOG_LOADED) return;
+/* cheap check: compare the server version with ours, re-fetch only when it differs */
+async function checkCatalogVersion(){
+  if(document.hidden) return;
+  if(!CATALOG_LOADED) return loadCatalog();
   try{ const v = await API.get("/api/public/version",{retries:0,timeout:8000}); if(!CATALOG || v.version !== CATALOG.version) loadCatalog(); }catch(e){}
-}, 30000);
+}
+/* live updates: poll every 10s while the tab is visible ... */
+setInterval(checkCatalogVersion, 10000);
+/* ... and refresh immediately when the visitor comes back to the tab / unlocks the phone / regains network / uses Back (bfcache) */
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) checkCatalogVersion(); });
+window.addEventListener("focus", checkCatalogVersion);
+window.addEventListener("online", loadCatalog);
+window.addEventListener("pageshow", e=>{ if(e.persisted) loadCatalog(); });
 loadCatalog();
 
 const AdminStore = {
