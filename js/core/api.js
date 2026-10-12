@@ -12,8 +12,11 @@ const API = (() => {
     const ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
     const t = ctl ? setTimeout(() => ctl.abort(), o.timeout || 15000) : null;
     try {
-      const r = await fetch(BASE + path, {
+      /* GETs always bypass the browser/CDN cache so admin changes show on the very next load */
+      const url = BASE + path + (method === "GET" ? (path.indexOf("?") > -1 ? "&" : "?") + "_=" + Date.now() : "");
+      const r = await fetch(url, {
         method,
+        cache: method === "GET" ? "no-store" : "default",
         headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
         body: body !== undefined ? JSON.stringify(body) : undefined,
         keepalive: !!o.keepalive,
