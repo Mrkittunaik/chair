@@ -14,9 +14,43 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/extra.css">
-<link rel="stylesheet" href="/css/seo.css">
+<script>
+/* AUTO HARD-REFRESH: when any site file (JS/CSS) changes on the server, every open device clears its caches and reloads by itself. */
+(function(){
+  var KEY="adil_build", LAST="adil_reload_at";
+  function files(){ var a=[].slice.call(document.querySelectorAll('script[src],link[rel=stylesheet][href]')).map(function(e){return e.src||e.href;});
+    return a.filter(function(u){ return u.indexOf(location.origin)===0 && /\/(js|css)\//.test(u); }); }
+  function hash(t){ var h=0; for(var i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; } return h+":"+t.length; }
+  async function sig(){
+    var f=files(), out=[];
+    for(var i=0;i<f.length;i++){ try{ var r=await fetch(f[i],{cache:"no-store"}); out.push(r.ok?hash(await r.text()):"x"); }catch(e){ return null; } }
+    return out.join("|");
+  }
+  async function hardRefresh(){
+    var last=+sessionStorage.getItem(LAST)||0; if(Date.now()-last<45000) return;   /* never loop */
+    sessionStorage.setItem(LAST,String(Date.now()));
+    try{ if(window.caches){ var k=await caches.keys(); await Promise.all(k.map(function(x){return caches.delete(x);})); } }catch(e){}
+    try{ if(navigator.serviceWorker){ var rg=await navigator.serviceWorker.getRegistrations(); await Promise.all(rg.map(function(x){return x.unregister();})); } }catch(e){}
+    try{ await Promise.all(files().map(function(u){ return fetch(u,{cache:"reload"}); })); }catch(e){}
+    location.reload();
+  }
+  async function check(){
+    if(document.hidden) return;
+    var s=await sig(); if(!s) return;
+    var old=null; try{ old=localStorage.getItem(KEY); }catch(e){}
+    try{ localStorage.setItem(KEY,s); }catch(e){}
+    if(old && old!==s) hardRefresh();
+  }
+  window.addEventListener("load",function(){ setTimeout(check,1500); });
+  document.addEventListener("visibilitychange",check);
+  window.addEventListener("focus",check);
+  window.addEventListener("pageshow",function(e){ if(e.persisted) check(); });
+  setInterval(check,60000);
+})();
+</script>
+<link rel="stylesheet" href="/css/style.css?v=20261012a">
+<link rel="stylesheet" href="/css/extra.css?v=20261012a">
+<link rel="stylesheet" href="/css/seo.css?v=20261012a">
 <link rel="modulepreload" href="/seo/lib.js">
 </head>
 <body>
@@ -27,28 +61,28 @@
 
 <!-- API client + visitor tracking (backend: Express + MongoDB) -->
 <script>window.API_BASE = "https://adilbackend-h5dp.onrender.com";   /* backend URL, no trailing slash */</script>
-<script defer src="/js/core/api.js"></script>
-<script defer src="/js/core/tracker.js"></script>
+<script defer src="/js/core/api.js?v=20261012a"></script>
+<script defer src="/js/core/tracker.js?v=20261012a"></script>
 
 <!-- Data layer -->
-<script defer src="/js/data/products.js"></script>
-<script defer src="/js/data/whatsapp.js"></script>
+<script defer src="/js/data/products.js?v=20261012a"></script>
+<script defer src="/js/data/whatsapp.js?v=20261012a"></script>
 
 <!-- Shared UI (icons, nav, header/footer, toast, product cards) -->
-<script defer src="/js/ui/icons-nav.js"></script>
-<script defer src="/js/ui/layout.js"></script>
-<script defer src="/js/ui/popup.js"></script>
+<script defer src="/js/ui/icons-nav.js?v=20261012a"></script>
+<script defer src="/js/ui/layout.js?v=20261012a"></script>
+<script defer src="/js/ui/popup.js?v=20261012a"></script>
 
 <!-- Page views (rendered into #app by the router) -->
-<script defer src="/js/views/search.js"></script>
-<script defer src="/js/views/home.js"></script>
-<script defer src="/js/views/shop.js"></script>
-<script defer src="/js/views/product.js"></script>
-<script defer src="/js/views/cart-checkout.js"></script>
-<script defer src="/js/views/misc.js"></script>
-<script defer src="/js/views/bulk.js"></script>
+<script defer src="/js/views/search.js?v=20261012a"></script>
+<script defer src="/js/views/home.js?v=20261012a"></script>
+<script defer src="/js/views/shop.js?v=20261012a"></script>
+<script defer src="/js/views/product.js?v=20261012a"></script>
+<script defer src="/js/views/cart-checkout.js?v=20261012a"></script>
+<script defer src="/js/views/misc.js?v=20261012a"></script>
+<script defer src="/js/views/bulk.js?v=20261012a"></script>
 
 <!-- Router + app bootstrap (must load last) -->
-<script defer src="/js/core/app.js"></script>
+<script defer src="/js/core/app.js?v=20261012a"></script>
 </body>
 </html>
